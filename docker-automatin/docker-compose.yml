@@ -1,0 +1,59 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/molecular_docking
+      - PYTHON_SERVICE_URL=http://python-rpa:5000
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+      python-rpa:
+        condition: service_started
+    volumes:
+      - uploaded_files:/app/uploads
+      - result_files:/app/results
+    restart: unless-stopped
+
+  python-rpa:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploaded_files:/app/uploads
+      - result_files:/app/results
+    environment:
+      - FLASK_ENV=production
+      - AUTODOCK_TOOLS_PATH=/app/mgltools
+      - AUTODOCK_VINA_PATH=/app/vina
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=molecular_docking
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  uploaded_files:
+  result_files:

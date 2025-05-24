@@ -1,0 +1,59 @@
+-- Create tables for the molecular docking application
+
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  role VARCHAR(100) NOT NULL,
+  institution VARCHAR(255) NOT NULL,
+  research_purpose TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Docking jobs table
+CREATE TABLE IF NOT EXISTS docking_jobs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  status VARCHAR(50) NOT NULL DEFAULT 'pending',
+  grid_size_x FLOAT NOT NULL DEFAULT 30,
+  grid_size_y FLOAT NOT NULL DEFAULT 30,
+  grid_size_z FLOAT NOT NULL DEFAULT 30,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Files table
+CREATE TABLE IF NOT EXISTS files (
+  id SERIAL PRIMARY KEY,
+  job_id INTEGER NOT NULL REFERENCES docking_jobs(id) ON DELETE CASCADE,
+  original_name VARCHAR(255) NOT NULL,
+  storage_path VARCHAR(255) NOT NULL,
+  file_type VARCHAR(50) NOT NULL,
+  file_size INTEGER NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Job results table
+CREATE TABLE IF NOT EXISTS job_results (
+  id SERIAL PRIMARY KEY,
+  job_id INTEGER NOT NULL REFERENCES docking_jobs(id) ON DELETE CASCADE,
+  result_path VARCHAR(255) NOT NULL,
+  binding_energy FLOAT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Job progress table
+CREATE TABLE IF NOT EXISTS job_progress (
+  id SERIAL PRIMARY KEY,
+  job_id INTEGER NOT NULL REFERENCES docking_jobs(id) ON DELETE CASCADE,
+  step VARCHAR(100) NOT NULL,
+  progress INTEGER NOT NULL DEFAULT 0,
+  message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
