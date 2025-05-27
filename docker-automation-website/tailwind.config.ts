@@ -9,10 +9,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-      },
-    },
+        border: 'hsl(var(--border))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        // add other custom color mappings as needed
+      }
+    }
   },
   plugins: [],
 } satisfies Config;
