@@ -13,10 +13,13 @@ export async function POST(req: Request) {
     const existingUser = await prisma.user.findUnique({
       where: { email }
     })
-
+    
     // Check if the user already exists
     if (existingUser) {
-      return NextResponse.redirect(new URL('/login?error=userExists', req.url))
+      return NextResponse.json({
+        success: false,
+        error: 'User already exists with this email'
+      }, { status: 409 });
     }
     
     // Hash the password
@@ -75,7 +78,6 @@ export async function POST(req: Request) {
     })
     response.headers.set('Set-Cookie', cookie)
     return response
-
   } catch (error) {
     console.error('Registration error:', error)
     return NextResponse.json({

@@ -43,7 +43,8 @@ export default function SignupPage() {
       if (data.success) {
         router.push("/docking")
       } else {
-        alert("Registration failed.")
+        router.push("/login")
+        alert(data.error)
       }
     } catch (err) {
       console.error(err)

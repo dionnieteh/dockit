@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { 
-      userId: string; 
+      userId: number; 
       userEmail: string 
     }
 

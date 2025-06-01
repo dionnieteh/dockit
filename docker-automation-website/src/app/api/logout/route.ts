@@ -1,4 +1,4 @@
-// app/api/logout/route.ts
+//docker-automation-website\src\app\api\logout\route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { serialize } from 'cookie'
 import jwt from 'jsonwebtoken'
