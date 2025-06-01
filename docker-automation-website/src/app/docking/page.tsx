@@ -1,49 +1,97 @@
-"use client"
+//docker-automation-website\src\app\docking\page.tsx
+"use client";
 
-import type React from "react"
-
-import { useState, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { DashboardHeader } from "@/components/dashboard-header"
-import { DashboardShell } from "@/components/dashboard-shell"
-import { FileUpload } from "@/components/file-upload"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Info } from "lucide-react"
+import type React from "react";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { DashboardHeader } from "@/components/dashboard-header";
+import { DashboardShell } from "@/components/dashboard-shell";
+import { FileUpload } from "@/components/file-upload";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Info, Loader2 } from "lucide-react";
 
 export default function NewJobPage() {
-  const router = useRouter()
-  const [files, setFiles] = useState<File[]>([])
-  const [gridSizeX, setGridSizeX] = useState(30)
-  const [gridSizeY, setGridSizeY] = useState(30)
-  const [gridSizeZ, setGridSizeZ] = useState(30)
-  const [jobName, setJobName] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showProgress, setShowProgress] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [currentStep, setCurrentStep] = useState("")
-  const [jobId, setJobId] = useState<string | null>(null)
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const router = useRouter();
+  const [files, setFiles] = useState<File[]>([]);
+  const [gridSizeX, setGridSizeX] = useState(30);
+  const [gridSizeY, setGridSizeY] = useState(30);
+  const [gridSizeZ, setGridSizeZ] = useState(30);
+  const [jobName, setJobName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState("");
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  
+  // Authentication states
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      setIsCheckingAuth(true);
+      setAuthError(null);
+
+      try {
+        const response = await fetch("/api/me", {
+          method: 'GET',
+          credentials: 'include', // Include cookies
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+          console.log("User is authenticated:", userData);
+        } else {
+          // User is not authenticated
+          console.error("User is not authenticated, redirecting to login");
+          
+          // Store the current path for redirect after login
+          const currentPath = window.location.pathname;
+          router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
+          return;
+        }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+        setAuthError("Failed to verify authentication");
+        
+        // Redirect to login on error
+        setTimeout(() => {
+          const currentPath = window.location.pathname;
+          router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
+        }, 2000);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuthentication();
+  }, [router]);
 
   const handleFileChange = (newFiles: File[]) => {
-    setFiles(newFiles)
-  }
+    setFiles(newFiles);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (files.length === 0) {
-      alert("Please upload at least one file")
-      return
+      alert("Please upload at least one file");
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       // Create a new job
@@ -52,38 +100,49 @@ export default function NewJobPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           name: jobName,
           gridSizeX,
           gridSizeY,
           gridSizeZ,
         }),
-      })
+      });
 
       if (!jobResponse.ok) {
-        throw new Error("Failed to create job")
+        if (jobResponse.status === 401) {
+          // Session expired, redirect to login
+          router.replace('/login');
+          return;
+        }
+        throw new Error("Failed to create job");
       }
 
-      const jobData = await jobResponse.json()
-      const newJobId = jobData.job.id
+      const jobData = await jobResponse.json();
+      const newJobId = jobData.job.id;
 
-      setJobId(newJobId)
+      setJobId(newJobId);
 
       // Upload files
-      const formData = new FormData()
-      formData.append("jobId", newJobId)
+      const formData = new FormData();
+      formData.append("jobId", newJobId);
 
       files.forEach((file) => {
-        formData.append("files", file)
-      })
+        formData.append("files", file);
+      });
 
       const uploadResponse = await fetch("/api/rpa/upload", {
         method: "POST",
+        credentials: 'include',
         body: formData,
-      })
+      });
 
       if (!uploadResponse.ok) {
-        throw new Error("Failed to upload files")
+        if (uploadResponse.status === 401) {
+          router.replace('/login');
+          return;
+        }
+        throw new Error("Failed to upload files");
       }
 
       // Start job processing
@@ -92,44 +151,55 @@ export default function NewJobPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
         body: JSON.stringify({
           jobId: newJobId,
           gridSizeX,
           gridSizeY,
           gridSizeZ,
         }),
-      })
+      });
 
       if (!startResponse.ok) {
-        throw new Error("Failed to start job processing")
+        if (startResponse.status === 401) {
+          router.replace('/login');
+          return;
+        }
+        throw new Error("Failed to start job processing");
       }
 
       // Show progress tracking
-      setShowProgress(true)
+      setShowProgress(true);
 
       // Start polling for progress updates
       progressIntervalRef.current = setInterval(() => {
-        fetchJobProgress(newJobId)
-      }, 2000)
+        fetchJobProgress(newJobId);
+      }, 2000);
     } catch (error) {
-      console.error("Error submitting job:", error)
-      alert("An error occurred while submitting the job. Please try again.")
-      setIsSubmitting(false)
+      console.error("Error submitting job:", error);
+      alert("An error occurred while submitting the job. Please try again.");
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const fetchJobProgress = async (id: string) => {
     try {
-      const response = await fetch(`/api/rpa/progress/${id}`)
+      const response = await fetch(`/api/rpa/progress/${id}`, {
+        credentials: 'include'
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch job progress")
+        if (response.status === 401) {
+          router.replace('/login');
+          return;
+        }
+        throw new Error("Failed to fetch job progress");
       }
 
-      const progressData = await response.json()
+      const progressData = await response.json();
 
-      setProgress(progressData.progress || 0)
-      setCurrentStep(progressData.message || "Processing...")
+      setProgress(progressData.progress || 0);
+      setCurrentStep(progressData.message || "Processing...");
 
       // If job is complete or failed, stop polling
       if (
@@ -138,31 +208,75 @@ export default function NewJobPage() {
         progressData.progress >= 100
       ) {
         if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current)
+          clearInterval(progressIntervalRef.current);
         }
 
         // Redirect to results page after a short delay
         setTimeout(() => {
-          router.push(`/dashboard/jobs/${id}`)
-        }, 2000)
+          router.push(`/dashboard/jobs/${id}`);
+        }, 2000);
       }
     } catch (error) {
-      console.error("Error fetching job progress:", error)
+      console.error("Error fetching job progress:", error);
     }
-  }
+  };
 
   // Clean up interval on unmount
   useEffect(() => {
     return () => {
       if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
+        clearInterval(progressIntervalRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
+
+  // Show loading spinner while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-sm text-muted-foreground">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if authentication check failed
+  if (authError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-600">Authentication Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">{authError}</p>
+            <p className="text-sm text-muted-foreground mt-2">Redirecting to login...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show main content only if user is authenticated
+  if (!user) {
+    return null; // This shouldn't happen due to the checks above, but just in case
+  }
 
   return (
     <DashboardShell>
       <DashboardHeader heading="New Docking Job" text="Configure and run a new molecular docking simulation." />
+
+      <div className="mb-6">
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Welcome, {user.name}!</AlertTitle>
+          <AlertDescription>
+            You're logged in as {user.email}. Configure your molecular docking job below.
+          </AlertDescription>
+        </Alert>
+      </div>
 
       {!showProgress ? (
         <Card>
@@ -183,122 +297,78 @@ export default function NewJobPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Upload Files (mol2 or pdb format)</Label>
-                <FileUpload onFilesChange={handleFileChange} acceptedFileTypes={[".mol2", ".pdb"]} multiple={true} />
-                <p className="text-xs text-muted-foreground">Upload one or more molecule files in mol2 or pdb format</p>
+              <div className="space-y-4">
+                <Label>File Upload</Label>
+                <FileUpload onFilesChange={handleFileChange} />
                 {files.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-sm font-medium">Selected Files ({files.length}):</p>
-                    <ul className="mt-1 text-sm text-muted-foreground">
-                      {Array.from(files).map((file, index) => (
-                        <li key={index}>{file.name}</li>
-                      ))}
-                    </ul>
+                  <div className="text-sm text-muted-foreground">
+                    {files.length} file(s) selected
                   </div>
                 )}
               </div>
 
-              <Tabs defaultValue="grid" className="w-full">
+              <Tabs defaultValue="basic" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="grid">Grid Parameters</TabsTrigger>
-                  <TabsTrigger value="advanced">Advanced Options</TabsTrigger>
+                  <TabsTrigger value="basic">Basic Settings</TabsTrigger>
+                  <TabsTrigger value="advanced">Advanced Settings</TabsTrigger>
                 </TabsList>
-                <TabsContent value="grid" className="space-y-4">
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Grid Size Configuration</AlertTitle>
-                    <AlertDescription>
-                      The grid box defines the search space for AutoDock Vina. Default values (30Å) are suitable for
-                      most protein-ligand docking scenarios.
-                    </AlertDescription>
-                  </Alert>
-
-                  <div className="space-y-4">
+                
+                <TabsContent value="basic" className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="size-x">Grid Size X: {gridSizeX}Å</Label>
-                        <Input
-                          id="size-x-input"
-                          type="number"
-                          value={gridSizeX}
-                          onChange={(e) => setGridSizeX(Number(e.target.value))}
-                          className="w-16"
-                          min={10}
-                          max={100}
-                        />
-                      </div>
+                      <Label>Grid Size X: {gridSizeX}</Label>
                       <Slider
-                        id="size-x"
-                        min={10}
-                        max={100}
-                        step={1}
                         value={[gridSizeX]}
                         onValueChange={(value) => setGridSizeX(value[0])}
+                        max={100}
+                        min={10}
+                        step={1}
                       />
                     </div>
-
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="size-y">Grid Size Y: {gridSizeY}Å</Label>
-                        <Input
-                          id="size-y-input"
-                          type="number"
-                          value={gridSizeY}
-                          onChange={(e) => setGridSizeY(Number(e.target.value))}
-                          className="w-16"
-                          min={10}
-                          max={100}
-                        />
-                      </div>
+                      <Label>Grid Size Y: {gridSizeY}</Label>
                       <Slider
-                        id="size-y"
-                        min={10}
-                        max={100}
-                        step={1}
                         value={[gridSizeY]}
                         onValueChange={(value) => setGridSizeY(value[0])}
+                        max={100}
+                        min={10}
+                        step={1}
                       />
                     </div>
-
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="size-z">Grid Size Z: {gridSizeZ}Å</Label>
-                        <Input
-                          id="size-z-input"
-                          type="number"
-                          value={gridSizeZ}
-                          onChange={(e) => setGridSizeZ(Number(e.target.value))}
-                          className="w-16"
-                          min={10}
-                          max={100}
-                        />
-                      </div>
+                      <Label>Grid Size Z: {gridSizeZ}</Label>
                       <Slider
-                        id="size-z"
-                        min={10}
-                        max={100}
-                        step={1}
                         value={[gridSizeZ]}
                         onValueChange={(value) => setGridSizeZ(value[0])}
+                        max={100}
+                        min={10}
+                        step={1}
                       />
                     </div>
                   </div>
                 </TabsContent>
+                
                 <TabsContent value="advanced" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Advanced options will be available in future updates</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Future versions will include exhaustiveness settings, energy range configurations, and custom
-                      scoring functions.
-                    </p>
-                  </div>
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Advanced Settings</AlertTitle>
+                    <AlertDescription>
+                      Additional configuration options will be available here.
+                    </AlertDescription>
+                  </Alert>
                 </TabsContent>
               </Tabs>
             </CardContent>
             <CardFooter>
               <Button type="submit" disabled={isSubmitting || files.length === 0}>
-                {isSubmitting ? "Submitting..." : "Start Docking"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Start Docking"
+                )}
               </Button>
             </CardFooter>
           </form>
@@ -323,9 +393,14 @@ export default function NewJobPage() {
               <p className="text-sm font-medium">Current Step:</p>
               <p className="text-sm text-muted-foreground">{currentStep}</p>
             </div>
+            {jobId && (
+              <div className="text-xs text-muted-foreground">
+                Job ID: {jobId}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
     </DashboardShell>
-  )
+  );
 }

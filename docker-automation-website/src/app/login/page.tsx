@@ -1,28 +1,64 @@
+//docker-automation-website\src\app\login\page.tsx
 "use client"
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useSearchParams, useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+
+ const searchParams = useSearchParams()
+
+useEffect(() => {
+  const error = searchParams.get("error")
+  if (error === "userExists") {
+    setError("User already exists! Please log in instead.")
+  }
+}, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
 
-    // Simulate authentication
-    setTimeout(() => {
+
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Store JWT token in cookies
+        document.cookie = `token=${data.token}; path=/; HttpOnly; Max-Age=${60 * 60 * 24 * 7}` // Set a 7-day expiration
+
+        // Redirect to /docking or dashboard
+        router.push("/docking")
+      } else {
+        setError(data.error || "Invalid credentials")
+      }
+    } catch (err) {
+      console.error("Login error:", err)
+      setError("Error logging in. Please try again.")
+    } finally {
       setIsLoading(false)
-      router.push("/dashboard")
-    }, 1500)
+    }
+    
   }
 
   return (
@@ -34,9 +70,17 @@ export default function LoginPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {error && <div className="text-red-600 text-sm">{error}</div>}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="researcher@example.com" required />
+              <Input
+                id="email"
+                type="email"
+                placeholder="researcher@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -45,7 +89,13 @@ export default function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Input id="password" type="password" required />
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">

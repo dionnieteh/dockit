@@ -1,36 +1,48 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { FileText, Home, LogOut, Settings, Upload } from "lucide-react"
+import { FileText, LogOut, Settings, Upload } from "lucide-react"
 
 export function DashboardNav() {
   const pathname = usePathname()
+  const router = useRouter()
 
   const navItems = [
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: Home,
-    },
-    {
-      title: "New Job",
-      href: "/dashboard/new-job",
-      icon: Upload,
-    },
     {
       title: "Results",
       href: "/dashboard/results",
       icon: FileText,
-    },
-    {
-      title: "Settings",
-      href: "/dashboard/settings",
-      icon: Settings,
-    },
+    }
   ]
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        // Redirect to login page after successful logout
+        router.push('/login')
+        // Optional: refresh the page to clear any client-side state
+        router.refresh()
+      } else {
+        console.error('Logout failed')
+        // Still redirect even if logout API fails (to clear client-side state)
+        router.push('/login')
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Still redirect even on error
+      router.push('/login')
+    }
+  }
 
   return (
     <div className="flex h-full flex-col p-4">
@@ -53,12 +65,14 @@ export function DashboardNav() {
         </div>
       </div>
       <div className="mt-auto">
-        <Link href="/login">
-          <Button variant="outline" className="w-full justify-start">
-            <LogOut className="mr-2 h-4 w-4" />
-            Log out
-          </Button>
-        </Link>
+        <Button 
+          variant="outline" 
+          className="w-full justify-start"
+          onClick={handleLogout}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Log out
+        </Button>
       </div>
     </div>
   )
