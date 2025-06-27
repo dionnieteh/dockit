@@ -5,3 +5,5 @@ Dockerfile
 .gitignore
 uploads
 .env
+README.md
+.nixpacks
