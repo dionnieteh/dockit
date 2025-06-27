@@ -1,4 +1,7 @@
-import { prisma } from 'prisma'; // Make sure prisma is correctly imported
+// src/tasks/sessionCleanup.ts
+import { PrismaClient } from '@prisma/client'; // Import PrismaClient
+
+const prisma = new PrismaClient(); // Instantiate the Prisma client
 
 // Define the session cleanup function
 export async function cleanupExpiredSessions() {
