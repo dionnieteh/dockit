@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { FileText, LogOut, Settings, Upload } from "lucide-react"
+import { FileText, LogOut } from "lucide-react"
 
 export function DashboardNav() {
   const pathname = usePathname()

@@ -27,7 +27,7 @@ export function middleware(request: NextRequest) {
     // Verify JWT token
     jwt.verify(token, process.env.JWT_SECRET!)
     return NextResponse.next()
-  } catch (error) {
+  } catch (_error) {
     // Invalid token, redirect to login
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', request.nextUrl.pathname)

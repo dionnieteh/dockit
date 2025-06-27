@@ -36,7 +36,11 @@ function runCommand(cmd: string, args: string[]) {
   return new Promise<void>((resolve, reject) => {
     const proc = spawn(cmd, args, { env: process.env, stdio: 'inherit' });
     proc.on('close', (code) => {
-      code === 0 ? resolve() : reject(`Command ${cmd} exited with ${code}`);
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(`Command ${cmd} exited with ${code}`);
+      }
     });
   });
 }
