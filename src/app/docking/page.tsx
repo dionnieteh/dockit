@@ -273,7 +273,7 @@ export default function NewJobPage() {
           <Info className="h-4 w-4" />
           <AlertTitle>Welcome, {user.name}!</AlertTitle>
           <AlertDescription>
-            {`You're logged in as {user.email}. Configure your molecular docking job below.`}
+            `You're logged in as {user.email}. Configure your molecular docking job below.`
           </AlertDescription>
         </Alert>
       </div>
