@@ -11,9 +11,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm install
 
+# Copy the prisma directory before running npm install
+# This ensures prisma/schema.prisma is available for `prisma generate`
+COPY prisma ./prisma
+
 # Generate Prisma client & build app
 COPY . .
-RUN npx prisma generate --schema=prisma/schema.prisma
+RUN npx prisma generate
 RUN npm run build
 
 EXPOSE 3000
