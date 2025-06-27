@@ -1,4 +1,4 @@
-FROM ghcr.io/ccsb-scripps/autodock-vina:latest
+FROM ghcr.io/metaphorme/vina-all:v1.2.5
 
 # Install Node.js
 RUN apt-get update && apt-get install -y curl \
