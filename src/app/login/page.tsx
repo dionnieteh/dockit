@@ -1,4 +1,3 @@
-//docker-automation-website\src\app\login\page.tsx
 "use client"
 
 import type React from "react"
@@ -18,14 +17,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
 
- const searchParams = useSearchParams()
+  const searchParams = useSearchParams()
 
-useEffect(() => {
-  const error = searchParams.get("error")
-  if (error === "userExists") {
-    setError("User already exists! Please log in instead.")
-  }
-}, [searchParams])
+  useEffect(() => {
+    const error = searchParams.get("error")
+    if (error === "userExists") {
+      setError("User already exists! Please log in instead.")
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -58,7 +57,7 @@ useEffect(() => {
     } finally {
       setIsLoading(false)
     }
-    
+
   }
 
   return (
