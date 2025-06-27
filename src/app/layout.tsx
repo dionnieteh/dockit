@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { Suspense } from 'react' // Import Suspense
+import { Toaster } from '@/components/ui/toaster' // Import your Toaster component
 
 export const metadata: Metadata = {
   title: 'MolecularDock: Accelerating Dengue Cure Research with Automated Molecular Docking',
@@ -13,7 +15,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {/* Wrap children with Suspense to handle client-side components during prerendering */}
+        <Suspense fallback={<div>Loading...</div>}>
+          {children}
+        </Suspense>
+        {/* Place your Toaster component here, typically at the end of the body */}
+        <Toaster />
+      </body>
     </html>
   )
 }
