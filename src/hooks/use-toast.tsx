@@ -1,4 +1,6 @@
 // src/hooks/use-toast.tsx (or .ts if you prefer)
+"use client"
+
 import * as React from "react"
 
 // Define the type for a single toast
