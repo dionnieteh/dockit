@@ -74,6 +74,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/bcrypt": "^5.0.2",
     "eslint": "^9",
     "eslint-config-next": "15.1.8",
     "postcss": "^8",
