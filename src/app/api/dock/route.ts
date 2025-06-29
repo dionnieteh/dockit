@@ -4,6 +4,9 @@ import path from "path"
 import { spawn } from "child_process"
 import { prisma } from "@/lib/prisma"
 
+const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
+const ASSETS_DIR = path.join(process.cwd(), "src", "assets");
+
 export async function POST(req: Request) {
   const form = await req.formData()
 
@@ -17,7 +20,7 @@ export async function POST(req: Request) {
 
   const job = await prisma.job.create({
     data: {
-      name,
+      name: name,
       status: "processing",
       gridSizeX: gridX,
       gridSizeY: gridY,
@@ -40,16 +43,20 @@ export async function POST(req: Request) {
   const gridConfig = `${gridX} ${gridY} ${gridZ}`
 
   try {
+    const prepareLigandScriptPath = path.join(PYTHON_SCRIPTS_DIR, "prepare_ligand4.py");
     // Convert each ligand pdb to pdbqt
     for (const pdb of ligandFiles) {
       const out = pdb.replace(/\.pdb$/, ".pdbqt")
-      await runCommand("prepare_ligand4.py", ["-l", pdb, "-o", out])
+      await runCommand("python", [prepareLigandScriptPath, "-l", pdb, "-o", out]);
     }
+
+    // Construct the full path to fixed_receptor.pdbqt, now from src/assets
+    const receptorPath = path.join(ASSETS_DIR, "3c5x.pdbqt");
 
     // Loop through converted pdbqt files and dock each
     for (const pdbqt of ligandFiles.map(p => p.replace(/\.pdb$/, ".pdbqt"))) {
       await runCommand("vina", [
-        "--receptor", "fixed_receptor.pdbqt",
+        "--receptor", receptorPath,
         "--ligand", pdbqt,
         "--out", pdbqt.replace(".pdbqt", "_out.pdbqt"),
         "--config", `--center_x 0 --center_y 0 --center_z 0 --size_x ${gridX} --size_y ${gridY} --size_z ${gridZ}`,

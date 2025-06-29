@@ -7,7 +7,7 @@ async function main() {
   const hashedPassword = await bcrypt.hash('changeme123', 10); // 🔒 Secure password
 
   // 🧑‍💼 Create or update admin user
-  const admin = await prisma.user.create({
+  const admin = await prisma.user.upsert({
     where: { email: 'admin@dockit.app' }, // change if needed
     update: {},
     create: {
