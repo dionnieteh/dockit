@@ -29,7 +29,7 @@ export default function NewJobPage() {
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
-  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ id: number; name: string; email: string } | null>(null);
   
   // Authentication states
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -83,104 +83,51 @@ export default function NewJobPage() {
     setFiles(newFiles);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
+  if (files.length === 0) {
+    alert("Upload at least one PDB");
+    return;
+  }
+  setIsSubmitting(true);
 
-    if (files.length === 0) {
-      alert("Please upload at least one file");
-      return;
-    }
+  const formData = new FormData();
+  formData.append("userId", user?.id.toString() || "0");
+  formData.append("name", jobName);
+  formData.append("gridX", gridSizeX.toString());
+  formData.append("gridY", gridSizeY.toString());
+  formData.append("gridZ", gridSizeZ.toString());
+  files.forEach((f) => formData.append("files", f));
 
-    setIsSubmitting(true);
+  const res = await fetch("/api/dock", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
 
-    try {
-      // Create a new job
-      const jobResponse = await fetch("/api/jobs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: 'include', // Include cookies for authentication
-        body: JSON.stringify({
-          name: jobName,
-          gridSizeX,
-          gridSizeY,
-          gridSizeZ,
-        }),
-      });
+  if (!res.ok) {
+    if (res.status === 401) router.replace("/login");
+    else throw new Error("Docking error");
+  }
 
-      if (!jobResponse.ok) {
-        if (jobResponse.status === 401) {
-          // Session expired, redirect to login
-          router.replace('/login');
-          return;
+  const { jobId } = await res.json();
+  setJobId(jobId);
+  setShowProgress(true);
+
+  progressIntervalRef.current = setInterval(() => {
+    fetch("/api/dock/progress/" + jobId, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        setProgress(data.progress || 0);
+        setCurrentStep(data.message || "");
+        if (data.status === "complete" || data.status === "error") {
+          clearInterval(progressIntervalRef.current!);
+          setTimeout(() => router.push(`/dashboard/jobs/${jobId}`), 1500);
         }
-        throw new Error("Failed to create job");
-      }
-
-      const jobData = await jobResponse.json();
-      const newJobId = jobData.job.id;
-
-      setJobId(newJobId);
-
-      // Upload files
-      const formData = new FormData();
-      formData.append("jobId", newJobId);
-
-      files.forEach((file) => {
-        formData.append("files", file);
-      });
-
-      const uploadResponse = await fetch("/api/rpa/upload", {
-        method: "POST",
-        credentials: 'include',
-        body: formData,
-      });
-
-      if (!uploadResponse.ok) {
-        if (uploadResponse.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        throw new Error("Failed to upload files");
-      }
-
-      // Start job processing
-      const startResponse = await fetch("/api/rpa/start-job", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          jobId: newJobId,
-          gridSizeX,
-          gridSizeY,
-          gridSizeZ,
-        }),
-      });
-
-      if (!startResponse.ok) {
-        if (startResponse.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        throw new Error("Failed to start job processing");
-      }
-
-      // Show progress tracking
-      setShowProgress(true);
-
-      // Start polling for progress updates
-      progressIntervalRef.current = setInterval(() => {
-        fetchJobProgress(newJobId);
-      }, 2000);
-    } catch (error) {
-      console.error("Error submitting job:", error);
-      alert("An error occurred while submitting the job. Please try again.");
-      setIsSubmitting(false);
-    }
-  };
+      })
+      .catch(console.error);
+  }, 2000);
+}
 
   const fetchJobProgress = async (id: string) => {
     try {
