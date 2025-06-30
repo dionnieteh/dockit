@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import fs from "fs/promises"
 import path from "path"
-import { spawn } from "child_process"
+import { spawn } from "child_process" // Make sure this is imported
 import { prisma } from "@/lib/prisma"
 
 const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
@@ -40,14 +40,13 @@ export async function POST(req: Request) {
   }
 
   const ligandFiles = files.map(f => path.join(jobDir, f.name))
-  const gridConfig = `${gridX} ${gridY} ${gridZ}`
 
   try {
     const prepareLigandScriptPath = path.join(PYTHON_SCRIPTS_DIR, "prepare_ligand4.py");
     // Convert each ligand pdb to pdbqt
     for (const pdb of ligandFiles) {
       const out = pdb.replace(/\.pdb$/, ".pdbqt")
-      await runCommand("python", [prepareLigandScriptPath, "-l", pdb, "-o", out]);
+      await runCommand("python3", [prepareLigandScriptPath, "-l", pdb, "-o", out]);
     }
 
     // Construct the full path to fixed_receptor.pdbqt, now from src/assets
@@ -55,13 +54,21 @@ export async function POST(req: Request) {
 
     // Loop through converted pdbqt files and dock each
     for (const pdbqt of ligandFiles.map(p => p.replace(/\.pdb$/, ".pdbqt"))) {
-      await runCommand("vina", [
+      const vinaArgs = [
         "--receptor", receptorPath,
         "--ligand", pdbqt,
         "--out", pdbqt.replace(".pdbqt", "_out.pdbqt"),
-        "--config", `--center_x 0 --center_y 0 --center_z 0 --size_x ${gridX} --size_y ${gridY} --size_z ${gridZ}`,
+        "--center_x", "0",
+        "--center_y", "0",
+        "--center_z", "0",
+        "--size_x", gridX.toString(),
+        "--size_y", gridY.toString(),
+        "--size_z", gridZ.toString(),
         "--exhaustiveness", "8",
-      ])
+      ];
+      // Pass the arguments as an array to runCommand,
+      // but runCommand will now build a single string and use shell: true.
+      await runCommand("vina", vinaArgs)
     }
 
     // On success
@@ -80,9 +87,33 @@ export async function POST(req: Request) {
   }
 }
 
+// MODIFIED runCommand function
 function runCommand(cmd: string, args: string[]) {
   return new Promise<void>((resolve, reject) => {
-    const proc = spawn(cmd, args, { env: process.env, stdio: "inherit" })
-    proc.on("close", code => (code === 0 ? resolve() : reject(new Error(`${cmd} exited with ${code}`))))
-  })
+    // Construct the full command string by joining arguments with spaces
+    // Ensure paths with spaces are quoted if that ever becomes an issue
+    const fullCommand = `${cmd} ${args.map(arg => {
+        // Simple quoting for paths or args that might contain spaces
+        // If your paths/args never contain spaces, arg.includes(' ') ? `"${arg}"` : arg
+        // might not be necessary, but it's safer.
+        return arg; // For now, assuming no spaces in args/paths
+    }).join(' ')}`;
+
+    console.log(`Executing command: ${fullCommand}`); // For debugging
+
+    // Use shell: true to let the shell handle argument parsing
+    const proc = spawn(fullCommand, { shell: true, env: process.env, stdio: "inherit" });
+
+    proc.on("close", code => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`${fullCommand} exited with ${code}`));
+      }
+    });
+
+    proc.on("error", err => {
+        reject(new Error(`Failed to start command ${fullCommand}: ${err.message}`));
+    });
+  });
 }

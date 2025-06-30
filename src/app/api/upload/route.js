@@ -29,7 +29,7 @@ export async function POST(req) {
 
   try {
     // Run prepare_ligand4.py to convert to .pdbqt
-    await execPromise(`python2 /docking_scripts/prepare_ligand4.py -l ${filePath} -o ${pdbqtPath}`);
+    await execPromise(`python3 /scripts/prepare_ligand4.py -l ${filePath} -o ${pdbqtPath}`);
 
     // Run docking script
     const { stdout } = await execPromise(`perl docking_script.pl ${pdbqtPath}`);
