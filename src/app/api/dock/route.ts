@@ -16,6 +16,14 @@ export async function POST(req: Request) {
   const gridX = parseInt(form.get("gridX") as string)
   const gridY = parseInt(form.get("gridY") as string)
   const gridZ = parseInt(form.get("gridZ") as string)
+  const centerX = parseFloat(form.get("centerX") as string);
+  const centerY = parseFloat(form.get("centerY") as string);
+  const centerZ = parseFloat(form.get("centerZ") as string);
+  const numModes = parseInt(form.get("numModes") as string);
+  const energyRange = parseInt(form.get("energyRange") as string);
+  const verbosity = parseInt(form.get("verbosity") as string);
+  const exhaustiveness = parseInt(form.get("exhaustiveness") as string);
+
   const files = form.getAll("files") as File[]
 
   const job = await prisma.job.create({
@@ -51,21 +59,27 @@ export async function POST(req: Request) {
 
     // Construct the full path to fixed_receptor.pdbqt, now from src/assets
     const receptorPath = path.join(ASSETS_DIR, "3c5x.pdbqt");
+    const configPath = path.join(ASSETS_DIR, "config.txt");
 
     // Loop through converted pdbqt files and dock each
     for (const pdbqt of ligandFiles.map(p => p.replace(/\.pdb$/, ".pdbqt"))) {
       const vinaArgs = [
+        "--config", configPath,
         "--receptor", receptorPath,
         "--ligand", pdbqt,
         "--out", pdbqt.replace(".pdbqt", "_out.pdbqt"),
-        "--center_x", "0",
-        "--center_y", "0",
-        "--center_z", "0",
+        "--center_x", centerX.toString(),
+        "--center_y", centerY.toString(),
+        "--center_z", centerZ.toString(),
         "--size_x", gridX.toString(),
         "--size_y", gridY.toString(),
         "--size_z", gridZ.toString(),
-        "--exhaustiveness", "8",
+        "--num_modes", numModes.toString(),
+        "--energy_range", energyRange.toString(),
+        "--verbosity", verbosity.toString(),
+        "--exhaustiveness", exhaustiveness.toString()
       ];
+
       // Pass the arguments as an array to runCommand,
       // but runCommand will now build a single string and use shell: true.
       await runCommand("vina", vinaArgs)
@@ -93,10 +107,10 @@ function runCommand(cmd: string, args: string[]) {
     // Construct the full command string by joining arguments with spaces
     // Ensure paths with spaces are quoted if that ever becomes an issue
     const fullCommand = `${cmd} ${args.map(arg => {
-        // Simple quoting for paths or args that might contain spaces
-        // If your paths/args never contain spaces, arg.includes(' ') ? `"${arg}"` : arg
-        // might not be necessary, but it's safer.
-        return arg; // For now, assuming no spaces in args/paths
+      // Simple quoting for paths or args that might contain spaces
+      // If your paths/args never contain spaces, arg.includes(' ') ? `"${arg}"` : arg
+      // might not be necessary, but it's safer.
+      return arg; // For now, assuming no spaces in args/paths
     }).join(' ')}`;
 
     console.log(`Executing command: ${fullCommand}`); // For debugging
@@ -113,7 +127,7 @@ function runCommand(cmd: string, args: string[]) {
     });
 
     proc.on("error", err => {
-        reject(new Error(`Failed to start command ${fullCommand}: ${err.message}`));
+      reject(new Error(`Failed to start command ${fullCommand}: ${err.message}`));
     });
   });
 }

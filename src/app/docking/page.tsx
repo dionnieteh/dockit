@@ -23,6 +23,13 @@ export default function NewJobPage() {
   const [gridSizeX, setGridSizeX] = useState(30);
   const [gridSizeY, setGridSizeY] = useState(30);
   const [gridSizeZ, setGridSizeZ] = useState(30);
+  const [centerX, setCenterX] = useState(17.1299);
+  const [centerY, setCenterY] = useState(-4.8141);
+  const [centerZ, setCenterZ] = useState(38.9618);
+  const [numModes, setNumModes] = useState(10);
+  const [energyRange, setEnergyRange] = useState(4);
+  const [verbosity, setVerbosity] = useState(1);
+  const [exhaustiveness, setExhaustiveness] = useState(8);
   const [jobName, setJobName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
@@ -30,11 +37,11 @@ export default function NewJobPage() {
   const [currentStep, setCurrentStep] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
   const [user, setUser] = useState<{ id: number; name: string; email: string } | null>(null);
-  
+
   // Authentication states
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  
+
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check authentication on component mount
@@ -56,7 +63,7 @@ export default function NewJobPage() {
         } else {
           // User is not authenticated
           console.error("User is not authenticated, redirecting to login");
-          
+
           // Store the current path for redirect after login
           const currentPath = window.location.pathname;
           router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
@@ -65,7 +72,7 @@ export default function NewJobPage() {
       } catch (error) {
         console.error("Error checking authentication:", error);
         setAuthError("Failed to verify authentication");
-        
+
         // Redirect to login on error
         setTimeout(() => {
           const currentPath = window.location.pathname;
@@ -83,51 +90,59 @@ export default function NewJobPage() {
     setFiles(newFiles);
   };
 
-async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
-  if (files.length === 0) {
-    alert("Upload at least one PDB");
-    return;
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (files.length === 0) {
+      alert("Upload at least one PDB");
+      return;
+    }
+    setIsSubmitting(true);
+
+    const formData = new FormData();
+    formData.append("userId", user?.id.toString() || "0");
+    formData.append("name", jobName);
+    formData.append("gridX", gridSizeX.toString());
+    formData.append("gridY", gridSizeY.toString());
+    formData.append("gridZ", gridSizeZ.toString());
+    formData.append("centerX", centerX.toString());
+    formData.append("centerY", centerY.toString());
+    formData.append("centerZ", centerZ.toString());
+    formData.append("numModes", numModes.toString());
+    formData.append("energyRange", energyRange.toString());
+    formData.append("verbosity", verbosity.toString());
+    formData.append("exhaustiveness", exhaustiveness.toString());
+
+    files.forEach((f) => formData.append("files", f));
+
+    const res = await fetch("/api/dock", {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) router.replace("/login");
+      else throw new Error("Docking error");
+    }
+
+    const { jobId } = await res.json();
+    setJobId(jobId);
+    setShowProgress(true);
+
+    progressIntervalRef.current = setInterval(() => {
+      fetch("/api/dock/progress/" + jobId, { credentials: "include" })
+        .then((r) => r.json())
+        .then((data) => {
+          setProgress(data.progress || 0);
+          setCurrentStep(data.message || "");
+          if (data.status === "complete" || data.status === "error") {
+            clearInterval(progressIntervalRef.current!);
+            setTimeout(() => router.push(`/dashboard/jobs/${jobId}`), 1500);
+          }
+        })
+        .catch(console.error);
+    }, 2000);
   }
-  setIsSubmitting(true);
-
-  const formData = new FormData();
-  formData.append("userId", user?.id.toString() || "0");
-  formData.append("name", jobName);
-  formData.append("gridX", gridSizeX.toString());
-  formData.append("gridY", gridSizeY.toString());
-  formData.append("gridZ", gridSizeZ.toString());
-  files.forEach((f) => formData.append("files", f));
-
-  const res = await fetch("/api/dock", {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
-
-  if (!res.ok) {
-    if (res.status === 401) router.replace("/login");
-    else throw new Error("Docking error");
-  }
-
-  const { jobId } = await res.json();
-  setJobId(jobId);
-  setShowProgress(true);
-
-  progressIntervalRef.current = setInterval(() => {
-    fetch("/api/dock/progress/" + jobId, { credentials: "include" })
-      .then((r) => r.json())
-      .then((data) => {
-        setProgress(data.progress || 0);
-        setCurrentStep(data.message || "");
-        if (data.status === "complete" || data.status === "error") {
-          clearInterval(progressIntervalRef.current!);
-          setTimeout(() => router.push(`/dashboard/jobs/${jobId}`), 1500);
-        }
-      })
-      .catch(console.error);
-  }, 2000);
-}
 
   const fetchJobProgress = async (id: string) => {
     try {
@@ -259,7 +274,7 @@ async function handleSubmit(e: React.FormEvent) {
                   <TabsTrigger value="basic">Basic Settings</TabsTrigger>
                   <TabsTrigger value="advanced">Advanced Settings</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="basic" className="space-y-4">
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
@@ -294,15 +309,37 @@ async function handleSubmit(e: React.FormEvent) {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="advanced" className="space-y-4">
                   <Alert>
                     <Info className="h-4 w-4" />
-                    <AlertTitle>Advanced Settings</AlertTitle>
+                    <AlertTitle>Advanced Docking Parameters</AlertTitle>
                     <AlertDescription>
-                      Additional configuration options will be available here.
+                      Fine-tune your docking simulation with these optional parameters.
                     </AlertDescription>
                   </Alert>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="center-x">Center X: {centerX}</Label>
+                      <Input id="center-x" type="number" step="0.0001" value={centerX} onChange={(e) => setCenterX(parseFloat(e.target.value))} />
+                      <Label htmlFor="center-y">Center Y: {centerY}</Label>
+                      <Input id="center-y" type="number" step="0.0001" value={centerY} onChange={(e) => setCenterY(parseFloat(e.target.value))} />
+                      <Label htmlFor="center-z">Center Z: {centerZ}</Label>
+                      <Input id="center-z" type="number" step="0.0001" value={centerZ} onChange={(e) => setCenterZ(parseFloat(e.target.value))} />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="num-modes">Number of Modes: {numModes}</Label>
+                      <Input id="num-modes" type="number" min={1} max={20} value={numModes} onChange={(e) => setNumModes(parseInt(e.target.value))} />
+                      <Label htmlFor="energy-range">Energy Range: {energyRange} kcal/mol</Label>
+                      <Input id="energy-range" type="number" min={1} max={10} value={energyRange} onChange={(e) => setEnergyRange(parseInt(e.target.value))} />
+                      <Label htmlFor="verbosity">Verbosity: {verbosity}</Label>
+                      <Input id="verbosity" type="number" min={0} max={2} value={verbosity} onChange={(e) => setVerbosity(parseInt(e.target.value))} />
+                      <Label htmlFor="exhaustiveness">Exhaustiveness: {exhaustiveness}</Label>
+                      <Input id="exhaustiveness" type="number" min={1} max={32} value={exhaustiveness} onChange={(e) => setExhaustiveness(parseInt(e.target.value))} />
+                    </div>
+                  </div>
                 </TabsContent>
               </Tabs>
             </CardContent>
