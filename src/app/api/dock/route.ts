@@ -59,12 +59,10 @@ export async function POST(req: Request) {
 
     // Construct the full path to fixed_receptor.pdbqt, now from src/assets
     const receptorPath = path.join(ASSETS_DIR, "3c5x.pdbqt");
-    const configPath = path.join(ASSETS_DIR, "config.txt");
 
     // Loop through converted pdbqt files and dock each
     for (const pdbqt of ligandFiles.map(p => p.replace(/\.pdb$/, ".pdbqt"))) {
       const vinaArgs = [
-        "--config", configPath,
         "--receptor", receptorPath,
         "--ligand", pdbqt,
         "--out", pdbqt.replace(".pdbqt", "_out.pdbqt"),

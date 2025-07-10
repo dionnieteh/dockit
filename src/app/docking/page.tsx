@@ -1,8 +1,7 @@
-//docker-automation-website\src\app\docking\page.tsx
 "use client";
 
 import type React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,39 +11,44 @@ import { Slider } from "@/components/ui/slider";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { FileUpload } from "@/components/file-upload";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { defaultDockingConfig } from "@/config/default-params";
 
 export default function NewJobPage() {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
-  const [gridSizeX, setGridSizeX] = useState(30);
-  const [gridSizeY, setGridSizeY] = useState(30);
-  const [gridSizeZ, setGridSizeZ] = useState(30);
-  const [centerX, setCenterX] = useState(17.1299);
-  const [centerY, setCenterY] = useState(-4.8141);
-  const [centerZ, setCenterZ] = useState(38.9618);
-  const [numModes, setNumModes] = useState(10);
-  const [energyRange, setEnergyRange] = useState(4);
-  const [verbosity, setVerbosity] = useState(1);
-  const [exhaustiveness, setExhaustiveness] = useState(8);
+  const [gridSizeX, setGridSizeX] = useState(defaultDockingConfig.gridSizeX);
+  const [gridSizeY, setGridSizeY] = useState(defaultDockingConfig.gridSizeY);
+  const [gridSizeZ, setGridSizeZ] = useState(defaultDockingConfig.gridSizeZ);
+  const [centerX, setCenterX] = useState(defaultDockingConfig.centerX);
+  const [centerY, setCenterY] = useState(defaultDockingConfig.centerY);
+  const [centerZ, setCenterZ] = useState(defaultDockingConfig.centerZ);
+  const [numModes, setNumModes] = useState(defaultDockingConfig.numModes);
+  const [energyRange, setEnergyRange] = useState(defaultDockingConfig.energyRange);
+  const [verbosity, setVerbosity] = useState(defaultDockingConfig.verbosity);
+  const [exhaustiveness, setExhaustiveness] = useState(defaultDockingConfig.exhaustiveness);
   const [jobName, setJobName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
   const [user, setUser] = useState<{ id: number; name: string; email: string } | null>(null);
 
-  // Authentication states
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
 
-  // Check authentication on component mount
+  useEffect(() => {
+    if (jobId) {
+      toast({
+        title: "Docking Complete ✅",
+        description: "Your job has finished processing!",
+      });
+    }
+  }, [jobId, toast]);
+
   useEffect(() => {
     const checkAuthentication = async () => {
       setIsCheckingAuth(true);
@@ -53,27 +57,19 @@ export default function NewJobPage() {
       try {
         const response = await fetch("/api/me", {
           method: 'GET',
-          credentials: 'include', // Include cookies
+          credentials: 'include',
         });
 
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
-          console.log("User is authenticated:", userData);
         } else {
-          // User is not authenticated
-          console.error("User is not authenticated, redirecting to login");
-
-          // Store the current path for redirect after login
           const currentPath = window.location.pathname;
           router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
           return;
         }
       } catch (error) {
-        console.error("Error checking authentication:", error);
         setAuthError("Failed to verify authentication");
-
-        // Redirect to login on error
         setTimeout(() => {
           const currentPath = window.location.pathname;
           router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
@@ -111,7 +107,6 @@ export default function NewJobPage() {
     formData.append("energyRange", energyRange.toString());
     formData.append("verbosity", verbosity.toString());
     formData.append("exhaustiveness", exhaustiveness.toString());
-
     files.forEach((f) => formData.append("files", f));
 
     const res = await fetch("/api/dock", {
@@ -127,72 +122,11 @@ export default function NewJobPage() {
 
     const { jobId } = await res.json();
     setJobId(jobId);
-    setShowProgress(true);
 
-    progressIntervalRef.current = setInterval(() => {
-      fetch("/api/dock/progress/" + jobId, { credentials: "include" })
-        .then((r) => r.json())
-        .then((data) => {
-          setProgress(data.progress || 0);
-          setCurrentStep(data.message || "");
-          if (data.status === "complete" || data.status === "error") {
-            clearInterval(progressIntervalRef.current!);
-            setTimeout(() => router.push(`/dashboard/jobs/${jobId}`), 1500);
-          }
-        })
-        .catch(console.error);
-    }, 2000);
+    // ✅ Redirect immediately after job submission
+    setTimeout(() => router.push(`/dashboard/jobs/${jobId}`), 2000);
   }
 
-  const fetchJobProgress = async (id: string) => {
-    try {
-      const response = await fetch(`/api/rpa/progress/${id}`, {
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.replace('/login');
-          return;
-        }
-        throw new Error("Failed to fetch job progress");
-      }
-
-      const progressData = await response.json();
-
-      setProgress(progressData.progress || 0);
-      setCurrentStep(progressData.message || "Processing...");
-
-      // If job is complete or failed, stop polling
-      if (
-        progressData.status === "docking_complete" ||
-        progressData.status === "error" ||
-        progressData.progress >= 100
-      ) {
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current);
-        }
-
-        // Redirect to results page after a short delay
-        setTimeout(() => {
-          router.push(`/dashboard/jobs/${id}`);
-        }, 2000);
-      }
-    } catch (error) {
-      console.error("Error fetching job progress:", error);
-    }
-  };
-
-  // Clean up interval on unmount
-  useEffect(() => {
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Show loading spinner while checking authentication
   if (isCheckingAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -204,7 +138,6 @@ export default function NewJobPage() {
     );
   }
 
-  // Show error state if authentication check failed
   if (authError) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -221,10 +154,7 @@ export default function NewJobPage() {
     );
   }
 
-  // Show main content only if user is authenticated
-  if (!user) {
-    return null; // This shouldn't happen due to the checks above, but just in case
-  }
+  if (!user) return null;
 
   return (
     <DashboardShell>
@@ -240,151 +170,103 @@ export default function NewJobPage() {
         </Alert>
       </div>
 
-      {!showProgress ? (
-        <Card>
-          <form onSubmit={handleSubmit}>
-            <CardHeader>
-              <CardTitle>Job Configuration</CardTitle>
-              <CardDescription>Upload molecule files and configure grid parameters for docking</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="job-name">Job Name</Label>
-                <Input
-                  id="job-name"
-                  placeholder="Enter a name for this docking job"
-                  value={jobName}
-                  onChange={(e) => setJobName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-4">
-                <Label>File Upload</Label>
-                <FileUpload onFilesChange={handleFileChange} />
-                {files.length > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    {files.length} file(s) selected
-                  </div>
-                )}
-              </div>
-
-              <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="basic">Basic Settings</TabsTrigger>
-                  <TabsTrigger value="advanced">Advanced Settings</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="basic" className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Grid Size X: {gridSizeX}</Label>
-                      <Slider
-                        value={[gridSizeX]}
-                        onValueChange={(value) => setGridSizeX(value[0])}
-                        max={100}
-                        min={10}
-                        step={1}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Grid Size Y: {gridSizeY}</Label>
-                      <Slider
-                        value={[gridSizeY]}
-                        onValueChange={(value) => setGridSizeY(value[0])}
-                        max={100}
-                        min={10}
-                        step={1}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Grid Size Z: {gridSizeZ}</Label>
-                      <Slider
-                        value={[gridSizeZ]}
-                        onValueChange={(value) => setGridSizeZ(value[0])}
-                        max={100}
-                        min={10}
-                        step={1}
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="advanced" className="space-y-4">
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Advanced Docking Parameters</AlertTitle>
-                    <AlertDescription>
-                      Fine-tune your docking simulation with these optional parameters.
-                    </AlertDescription>
-                  </Alert>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="center-x">Center X: {centerX}</Label>
-                      <Input id="center-x" type="number" step="0.0001" value={centerX} onChange={(e) => setCenterX(parseFloat(e.target.value))} />
-                      <Label htmlFor="center-y">Center Y: {centerY}</Label>
-                      <Input id="center-y" type="number" step="0.0001" value={centerY} onChange={(e) => setCenterY(parseFloat(e.target.value))} />
-                      <Label htmlFor="center-z">Center Z: {centerZ}</Label>
-                      <Input id="center-z" type="number" step="0.0001" value={centerZ} onChange={(e) => setCenterZ(parseFloat(e.target.value))} />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="num-modes">Number of Modes: {numModes}</Label>
-                      <Input id="num-modes" type="number" min={1} max={20} value={numModes} onChange={(e) => setNumModes(parseInt(e.target.value))} />
-                      <Label htmlFor="energy-range">Energy Range: {energyRange} kcal/mol</Label>
-                      <Input id="energy-range" type="number" min={1} max={10} value={energyRange} onChange={(e) => setEnergyRange(parseInt(e.target.value))} />
-                      <Label htmlFor="verbosity">Verbosity: {verbosity}</Label>
-                      <Input id="verbosity" type="number" min={0} max={2} value={verbosity} onChange={(e) => setVerbosity(parseInt(e.target.value))} />
-                      <Label htmlFor="exhaustiveness">Exhaustiveness: {exhaustiveness}</Label>
-                      <Input id="exhaustiveness" type="number" min={1} max={32} value={exhaustiveness} onChange={(e) => setExhaustiveness(parseInt(e.target.value))} />
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" disabled={isSubmitting || files.length === 0}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Start Docking"
-                )}
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
-      ) : (
-        <Card>
+      <Card>
+        <form onSubmit={handleSubmit}>
           <CardHeader>
-            <CardTitle>Processing Job</CardTitle>
-            <CardDescription>
-              Your molecular docking job is being processed. Please do not close this window.
-            </CardDescription>
+            <CardTitle>Job Configuration</CardTitle>
+            <CardDescription>Upload molecule files and configure grid parameters for docking</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Progress</span>
-                <span className="text-sm text-muted-foreground">{progress}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
+              <Label htmlFor="job-name">Job Name</Label>
+              <Input
+                id="job-name"
+                placeholder="Enter a name for this docking job"
+                value={jobName}
+                onChange={(e) => setJobName(e.target.value)}
+                required
+              />
             </div>
-            <div className="rounded-md bg-muted p-4">
-              <p className="text-sm font-medium">Current Step:</p>
-              <p className="text-sm text-muted-foreground">{currentStep}</p>
+
+            <div className="space-y-4">
+              <Label>File Upload</Label>
+              <FileUpload onFilesChange={handleFileChange} />
+              {files.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  {files.length} file(s) selected
+                </div>
+              )}
             </div>
-            {jobId && (
-              <div className="text-xs text-muted-foreground">
-                Job ID: {jobId}
-              </div>
-            )}
+
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="basic">Basic Settings</TabsTrigger>
+                <TabsTrigger value="advanced">Advanced Settings</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="basic" className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Grid Size X: {gridSizeX}</Label>
+                    <Slider value={[gridSizeX]} onValueChange={(v) => setGridSizeX(v[0])} max={100} min={10} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Grid Size Y: {gridSizeY}</Label>
+                    <Slider value={[gridSizeY]} onValueChange={(v) => setGridSizeY(v[0])} max={100} min={10} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Grid Size Z: {gridSizeZ}</Label>
+                    <Slider value={[gridSizeZ]} onValueChange={(v) => setGridSizeZ(v[0])} max={100} min={10} />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="advanced" className="space-y-4">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Advanced Docking Parameters</AlertTitle>
+                  <AlertDescription>
+                    Fine-tune your docking simulation with these optional parameters.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="center-x">Center X</Label>
+                    <Input id="center-x" type="number" step="0.0001" value={centerX} onChange={(e) => setCenterX(parseFloat(e.target.value))} />
+                    <Label htmlFor="center-y">Center Y</Label>
+                    <Input id="center-y" type="number" step="0.0001" value={centerY} onChange={(e) => setCenterY(parseFloat(e.target.value))} />
+                    <Label htmlFor="center-z">Center Z</Label>
+                    <Input id="center-z" type="number" step="0.0001" value={centerZ} onChange={(e) => setCenterZ(parseFloat(e.target.value))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="num-modes">Number of Modes</Label>
+                    <Input id="num-modes" type="number" value={numModes} onChange={(e) => setNumModes(parseInt(e.target.value))} />
+                    <Label htmlFor="energy-range">Energy Range</Label>
+                    <Input id="energy-range" type="number" value={energyRange} onChange={(e) => setEnergyRange(parseInt(e.target.value))} />
+                    <Label htmlFor="verbosity">Verbosity</Label>
+                    <Input id="verbosity" type="number" value={verbosity} onChange={(e) => setVerbosity(parseInt(e.target.value))} />
+                    <Label htmlFor="exhaustiveness">Exhaustiveness</Label>
+                    <Input id="exhaustiveness" type="number" value={exhaustiveness} onChange={(e) => setExhaustiveness(parseInt(e.target.value))} />
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
-        </Card>
-      )}
+          <CardFooter>
+            <Button type="submit" disabled={isSubmitting || files.length === 0}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Start Docking"
+              )}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
     </DashboardShell>
   );
 }
