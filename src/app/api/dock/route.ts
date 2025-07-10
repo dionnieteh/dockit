@@ -140,6 +140,12 @@ async function dockLigands(ligandPaths: string[], receptorPath: string, config: 
     ];
 
     await runCommand("vina", vinaArgs);
+
+    // 🧪 Extract only MODEL 1
+    const fullOutput = pdbqt.replace(".pdbqt", "_out.pdbqt");
+    const model1Output = pdbqt.replace(".pdbqt", "_model1.pdbqt");
+
+    await extractModel1Only(fullOutput, model1Output);
   }
 }
 
@@ -164,3 +170,14 @@ function runCommand(cmd: string, args: string[]) {
     });
   });
 }
+
+async function extractModel1Only(inputPath: string, outputPath: string) {
+  const content = await fs.readFile(inputPath, "utf-8");
+
+  const model1 = content.split(/MODEL\s+1[\r\n]+/)[1]?.split(/ENDMDL/)[0];
+  if (!model1) throw new Error("MODEL 1 not found in output");
+
+  const finalContent = `MODEL 1\n${model1.trim()}\nENDMDL\n`;
+  await fs.writeFile(outputPath, finalContent, "utf-8");
+}
+
