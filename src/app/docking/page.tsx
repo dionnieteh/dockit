@@ -124,7 +124,7 @@ export default function NewJobPage() {
     setJobId(jobId);
 
     // ✅ Redirect immediately after job submission
-    setTimeout(() => router.push(`/dashboard/jobs/${jobId}`), 2000);
+    // setTimeout(() => router.push(`/dashboard/jobs/${jobId}`), 2000);
   }
 
   if (isCheckingAuth) {
@@ -264,6 +264,15 @@ export default function NewJobPage() {
                 "Start Docking"
               )}
             </Button>
+            {jobId && (
+              <a
+  href={`/api/download/${jobId}`}
+  download
+  className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+>
+  Download Results
+</a>
+            )}
           </CardFooter>
         </form>
       </Card>

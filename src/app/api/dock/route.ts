@@ -3,6 +3,8 @@ import fs from "fs/promises";
 import path from "path";
 import { spawn } from "child_process";
 import { prisma } from "@/lib/prisma";
+import archiver from "archiver";
+import fsSync from "fs";
 
 const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
 const ASSETS_DIR = path.join(process.cwd(), "src", "assets");
@@ -24,6 +26,10 @@ export async function POST(req: Request) {
     const receptorPath = await getPreparedReceptorPath("3c5x.pdb");
 
     await dockLigands(ligandPaths, receptorPath, jobMetadata);
+
+    const zipPath = path.join(jobDir, "results.zip");
+    await zipModel1Outputs(jobDir, zipPath);
+
 
     await prisma.job.update({
       where: { id: job.id },
@@ -181,3 +187,23 @@ async function extractModel1Only(inputPath: string, outputPath: string) {
   await fs.writeFile(outputPath, finalContent, "utf-8");
 }
 
+async function zipModel1Outputs(jobDir: string, zipPath: string) {
+  return new Promise<void>((resolve, reject) => {
+    const output = fsSync.createWriteStream(zipPath);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    output.on("close", resolve);
+    archive.on("error", reject);
+
+    archive.pipe(output);
+
+    // Only include _model1.pdbqt files
+    fs.readdir(jobDir).then((files) => {
+      files.filter((f) => f.endsWith("_model1.pdbqt")).forEach((file) => {
+        const filePath = path.join(jobDir, file);
+        archive.file(filePath, { name: file });
+      });
+      archive.finalize();
+    });
+  });
+}
