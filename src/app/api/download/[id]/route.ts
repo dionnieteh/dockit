@@ -4,14 +4,15 @@ import path from "path";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  const { id } = params;
+  const { params } = context;
+  const id = params.id;
   const zipPath = path.join("/tmp", id, "results.zip");
 
   try {
-    await fs.access(zipPath); // Check if file exists
-    const buffer = await fs.readFile(zipPath); // Read file into memory
+    await fs.access(zipPath);
+    const buffer = await fs.readFile(zipPath);
 
     return new NextResponse(buffer, {
       headers: {

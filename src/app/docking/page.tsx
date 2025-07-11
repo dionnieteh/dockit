@@ -37,6 +37,8 @@ export default function NewJobPage() {
 
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [uploadKey, setUploadKey] = useState(0);
+
 
   const { toast } = useToast();
 
@@ -86,6 +88,26 @@ export default function NewJobPage() {
     setFiles(newFiles);
   };
 
+  function resetForm() {
+    setFiles([]);
+    setGridSizeX(defaultDockingConfig.gridSizeX);
+    setGridSizeY(defaultDockingConfig.gridSizeY);
+    setGridSizeZ(defaultDockingConfig.gridSizeZ);
+    setCenterX(defaultDockingConfig.centerX);
+    setCenterY(defaultDockingConfig.centerY);
+    setCenterZ(defaultDockingConfig.centerZ);
+    setNumModes(defaultDockingConfig.numModes);
+    setEnergyRange(defaultDockingConfig.energyRange);
+    setVerbosity(defaultDockingConfig.verbosity);
+    setExhaustiveness(defaultDockingConfig.exhaustiveness);
+    setJobName("");
+    setJobId(null);
+    setIsSubmitting(false);
+    handleFileChange([]);
+    setUploadKey(prev => prev + 1); // 👈 force reset FileUpload
+
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (files.length === 0) {
@@ -123,8 +145,6 @@ export default function NewJobPage() {
     const { jobId } = await res.json();
     setJobId(jobId);
 
-    // ✅ Redirect immediately after job submission
-    // setTimeout(() => router.push(`/dashboard/jobs/${jobId}`), 2000);
   }
 
   if (isCheckingAuth) {
@@ -190,7 +210,7 @@ export default function NewJobPage() {
 
             <div className="space-y-4">
               <Label>File Upload</Label>
-              <FileUpload onFilesChange={handleFileChange} />
+              <FileUpload key={uploadKey} onFilesChange={handleFileChange} />
               {files.length > 0 && (
                 <div className="text-sm text-muted-foreground">
                   {files.length} file(s) selected
@@ -253,7 +273,7 @@ export default function NewJobPage() {
               </TabsContent>
             </Tabs>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col sm:flex-row gap-4">
             <Button type="submit" disabled={isSubmitting || files.length === 0}>
               {isSubmitting ? (
                 <>
@@ -264,16 +284,23 @@ export default function NewJobPage() {
                 "Start Docking"
               )}
             </Button>
+
             {jobId && (
-              <a
-  href={`/api/download/${jobId}`}
-  download
-  className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
->
-  Download Results
-</a>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <a
+                  href={`/api/download/${jobId}`}
+                  download
+                  className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Download Results
+                </a>
+                <Button variant="outline" onClick={resetForm}>
+                  Start New Job
+                </Button>
+              </div>
             )}
           </CardFooter>
+
         </form>
       </Card>
     </DashboardShell>
