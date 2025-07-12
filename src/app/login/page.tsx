@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSearchParams, useRouter } from "next/navigation"
+import { useUser } from "@/lib/user-context"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -16,6 +17,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const { setUser } = useUser()
+
 
   const searchParams = useSearchParams()
 
@@ -45,7 +48,9 @@ export default function LoginPage() {
       if (data.success) {
         // Store JWT token in cookies
         document.cookie = `token=${data.token}; path=/; HttpOnly; Max-Age=${60 * 60 * 24 * 7}` // Set a 7-day expiration
+    const userData = await fetch("/api/me", { credentials: "include" }).then(res => res.json())
 
+        setUser(userData) // ✅ Update context immediately
         // Redirect to /docking or dashboard
         router.push("/docking")
       } else {

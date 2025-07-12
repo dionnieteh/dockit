@@ -62,7 +62,7 @@ export default function SignupPage() {
           <CardDescription>Enter your information to create an account</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 overflow-visible">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="first-name">First name</Label>
@@ -83,18 +83,22 @@ export default function SignupPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role/Position</Label>
-              <Select onValueChange={(val) => setRole(val)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="researcher">Research Scientist</SelectItem>
-                  <SelectItem value="professor">Professor</SelectItem>
-                  <SelectItem value="postdoc">Postdoctoral Researcher</SelectItem>
-                  <SelectItem value="student">Graduate Student</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="relative z-10">
+                <Select onValueChange={(val) => setRole(val)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-white">
+                    <SelectItem value="researcher">Research Scientist</SelectItem>
+                    <SelectItem value="professor">Professor</SelectItem>
+                    <SelectItem value="postdoc">Postdoctoral Researcher</SelectItem>
+                    <SelectItem value="student">Graduate Student</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <input type="hidden" name="role" value={role} />
+              </div>
+
               <input type="hidden" name="role" value={role} />
             </div>
             <div className="space-y-2">

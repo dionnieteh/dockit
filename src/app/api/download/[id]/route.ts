@@ -4,9 +4,10 @@ import path from "path";
 
 export async function GET(
   req: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { params } = context;
+  // Await the params Promise
+  const params = await context.params;
   const id = params.id;
   const zipPath = path.join("/tmp", id, "results.zip");
 

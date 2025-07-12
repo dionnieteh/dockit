@@ -15,25 +15,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { defaultDockingConfig } from "@/config/default-params";
+import { getDefaultParameters } from '@/lib/get-default-param'
+
 
 export default function NewJobPage() {
+  const [defaultParams, setDefaultParams] = useState<any | null>(null)
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
-  const [gridSizeX, setGridSizeX] = useState(defaultDockingConfig.gridSizeX);
-  const [gridSizeY, setGridSizeY] = useState(defaultDockingConfig.gridSizeY);
-  const [gridSizeZ, setGridSizeZ] = useState(defaultDockingConfig.gridSizeZ);
-  const [centerX, setCenterX] = useState(defaultDockingConfig.centerX);
-  const [centerY, setCenterY] = useState(defaultDockingConfig.centerY);
-  const [centerZ, setCenterZ] = useState(defaultDockingConfig.centerZ);
-  const [numModes, setNumModes] = useState(defaultDockingConfig.numModes);
-  const [energyRange, setEnergyRange] = useState(defaultDockingConfig.energyRange);
-  const [verbosity, setVerbosity] = useState(defaultDockingConfig.verbosity);
-  const [exhaustiveness, setExhaustiveness] = useState(defaultDockingConfig.exhaustiveness);
+  const [gridSizeX, setGridSizeX] = useState<number>(30)
+  const [gridSizeY, setGridSizeY] = useState<number>(30)
+  const [gridSizeZ, setGridSizeZ] = useState<number>(30)
+  const [centerX, setCenterX] = useState<number>(0)
+  const [centerY, setCenterY] = useState<number>(0)
+  const [centerZ, setCenterZ] = useState<number>(0)
+  const [numModes, setNumModes] = useState<number>(10)
+  const [energyRange, setEnergyRange] = useState<number>(4)
+  const [verbosity, setVerbosity] = useState<number>(1)
+  const [exhaustiveness, setExhaustiveness] = useState<number>(8)
   const [jobName, setJobName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
-  const [user, setUser] = useState<{ id: number; name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ id: number; name: string; email: string, role: string } | null>(null);
 
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -50,6 +52,30 @@ export default function NewJobPage() {
       });
     }
   }, [jobId, toast]);
+
+  useEffect(() => {
+    const fetchParams = async () => {
+      try {
+        const params = await getDefaultParameters()
+        setDefaultParams(params)
+        setGridSizeX(params.gridSizeX)
+        setGridSizeY(params.gridSizeY)
+        setGridSizeZ(params.gridSizeZ)
+        setCenterX(params.centerX)
+        setCenterY(params.centerY)
+        setCenterZ(params.centerZ)
+        setNumModes(params.numModes)
+        setEnergyRange(params.energyRange)
+        setVerbosity(params.verbosity)
+        setExhaustiveness(params.exhaustiveness)
+      } catch (err) {
+        console.error("Failed to fetch default docking parameters", err)
+      }
+    }
+
+    fetchParams()
+  }, [])
+
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -89,23 +115,22 @@ export default function NewJobPage() {
   };
 
   function resetForm() {
-    setFiles([]);
-    setGridSizeX(defaultDockingConfig.gridSizeX);
-    setGridSizeY(defaultDockingConfig.gridSizeY);
-    setGridSizeZ(defaultDockingConfig.gridSizeZ);
-    setCenterX(defaultDockingConfig.centerX);
-    setCenterY(defaultDockingConfig.centerY);
-    setCenterZ(defaultDockingConfig.centerZ);
-    setNumModes(defaultDockingConfig.numModes);
-    setEnergyRange(defaultDockingConfig.energyRange);
-    setVerbosity(defaultDockingConfig.verbosity);
-    setExhaustiveness(defaultDockingConfig.exhaustiveness);
-    setJobName("");
-    setJobId(null);
-    setIsSubmitting(false);
-    handleFileChange([]);
-    setUploadKey(prev => prev + 1); // 👈 force reset FileUpload
-
+    if (!defaultParams) return
+    setFiles([])
+    setGridSizeX(defaultParams.gridSizeX)
+    setGridSizeY(defaultParams.gridSizeY)
+    setGridSizeZ(defaultParams.gridSizeZ)
+    setCenterX(defaultParams.centerX)
+    setCenterY(defaultParams.centerY)
+    setCenterZ(defaultParams.centerZ)
+    setNumModes(defaultParams.numModes)
+    setEnergyRange(defaultParams.energyRange)
+    setVerbosity(defaultParams.verbosity)
+    setExhaustiveness(defaultParams.exhaustiveness)
+    setJobName("")
+    setJobId(null)
+    setIsSubmitting(false)
+    setUploadKey((prev) => prev + 1)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -147,7 +172,7 @@ export default function NewJobPage() {
 
   }
 
-  if (isCheckingAuth) {
+  if (!defaultParams || isCheckingAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center space-y-4">

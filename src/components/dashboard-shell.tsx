@@ -3,6 +3,7 @@ import { DashboardNav } from "@/components/dashboard-nav"
 
 interface DashboardShellProps {
   children: React.ReactNode
+  
 }
 
 export function DashboardShell({ children }: DashboardShellProps) {

@@ -33,7 +33,8 @@ export async function POST(req: Request) {
       { 
         userId: user.id, 
         userEmail: user.email,
-        userName: `${user.firstName} ${user.lastName}`
+        userName: `${user.firstName} ${user.lastName}`,
+        userRole: user.role
       },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
@@ -70,7 +71,8 @@ export async function POST(req: Request) {
       user: {
         id: user.id,
         name: `${user.firstName} ${user.lastName}`,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
     response.headers.set('Set-Cookie', cookie)

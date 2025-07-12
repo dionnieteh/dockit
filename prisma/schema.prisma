@@ -59,3 +59,28 @@ enum JobStatus {
   complete
   error
 }
+
+model ReceptorFile {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  filePath    String   @db.VarChar(255)
+  fileSize    Int
+  uploadedOn   DateTime @default(now())
+}
+
+model DefaultParameters {
+  id             Int      @id @default(1)
+  gridSizeX      String
+  gridSizeY      String
+  gridSizeZ      String
+  centerX        String
+  centerY        String
+  centerZ        String
+  numModes       String
+  energyRange    String
+  verbosity      String
+  exhaustiveness String
+  updatedBy      Int
+  updatedAt      DateTime @default(now()) @updatedAt
+}

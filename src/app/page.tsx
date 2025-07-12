@@ -7,7 +7,7 @@ export default function Home() {
       <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold px-4">MolecularDock</span>
+            <span className="text-xl font-bold px-4">DockIt</span>
           </div>
           <nav className="flex items-center gap-4">
             <Link href="/login">
@@ -143,7 +143,7 @@ export default function Home() {
       </main>
       <footer className="w-full border-t py-6">
         <div className="container flex flex-col items-center justify-center gap-4 md:flex-row md:gap-8">
-          <p className="text-center text-sm text-muted-foreground">© 2025 MolecularDock. All rights reserved.</p>
+          <p className="text-center text-sm text-muted-foreground">© 2025 DockIt. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -5,49 +5,53 @@ import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { FileText, LogOut } from "lucide-react"
+import { useUser } from "@/lib/user-context"
 
 export function DashboardNav() {
+  const { user, isLoading, logout } = useUser()
   const pathname = usePathname()
   const router = useRouter()
 
-  const navItems = [
+  if (isLoading) return null
+
+  const isAdmin = user?.role.toLowerCase() === "admin"
+
+  const userNavItems = [
     {
       title: "Results",
-      href: "/dashboard/results",
+      href: "/results",
       icon: FileText,
-    }
+    },
   ]
+
+  const adminNavItems = [
+    {
+      title: "placeholder",
+      href: "/results",
+      icon: FileText,
+    },
+  ]
+
+  console.log("User role:", user?.role) // Debugging line
+
+  const navItems =
+    isAdmin ? adminNavItems : userNavItems
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        // Redirect to login page after successful logout
-        router.push('/login')
-        // Optional: refresh the page to clear any client-side state
-        router.refresh()
-      } else {
-        console.error('Logout failed')
-        // Still redirect even if logout API fails (to clear client-side state)
-        router.push('/login')
-      }
+      await logout() // handles API + clears user context
+      router.push("/login")
+      router.refresh()
     } catch (error) {
-      console.error('Logout error:', error)
-      // Still redirect even on error
-      router.push('/login')
+      console.error("Logout error:", error)
+      router.push("/login")
     }
   }
 
   return (
     <div className="flex h-full flex-col p-4">
       <div className="py-2">
-        <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">MolecularDock</h2>
+        <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">DockIt</h2>
         <div className="space-y-1">
           {navItems.map((item) => (
             <Link
@@ -65,11 +69,7 @@ export function DashboardNav() {
         </div>
       </div>
       <div className="mt-auto">
-        <Button 
-          variant="outline" 
-          className="w-full justify-start"
-          onClick={handleLogout}
-        >
+        <Button variant="outline" className="w-full justify-start" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           Log out
         </Button>
