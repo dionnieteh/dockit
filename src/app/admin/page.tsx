@@ -11,8 +11,8 @@ import { ParameterConfiguration } from "@/components/parameter-configuration"
 import { AdminStats } from "@/components/admin-stats"
 
 export default function AdminDashboard() {
-    const [defaultParams, setDefaultParams] = useState<any | null>(null)
-  
+  const [defaultParams, setDefaultParams] = useState<any | null>(null)
+
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalJobs: 0,

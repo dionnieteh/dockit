@@ -21,9 +21,7 @@ interface Parameter {
   id: number;
   parameterName: string;
   parameterValue: string;
-  description: string;
   updatedBy: string;
-  updatedAt: string;
 }
 
 export function ParameterConfiguration() {
@@ -31,32 +29,44 @@ export function ParameterConfiguration() {
   const [loading, setLoading] = useState(true);
   const [editingParameter, setEditingParameter] = useState<Parameter | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const formatDateTimeMY = (date: Date) => {
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone: "Asia/Kuala_Lumpur",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  };
+
+  const parts = new Intl.DateTimeFormat("en-GB", options).formatToParts(date);
+  const get = (type: string) => parts.find(p => p.type === type)?.value;
+
+  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
+};
 
   useEffect(() => {
-    const fetchParams = async () => {
-      try {
-        const params = await getDefaultParameters();
+  fetchParams();
+}, []);
 
-        // Convert key-value object into array of editable Parameter objects
-        const transformed: Parameter[] = Object.entries(params).map(([key, value], index) => ({
-          id: index,
-          parameterName: key,
-          parameterValue: value.toString(),
-          description: "", // Fill this from database if available
-          updatedBy: "system",
-          updatedAt: new Date().toISOString(),
-        }));
-
-        setParameters(transformed);
-      } catch (err) {
-        console.error("Failed to fetch default docking parameters", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchParams();
-  }, []);
+const fetchParams = async () => {
+  try {
+    const params = await getDefaultParameters();
+    const transformed: Parameter[] = Object.entries(params).map(([key, value], index) => ({
+      id: index,
+      parameterName: key,
+      parameterValue: value.toString(),
+      updatedBy: "system",
+    }));
+    setParameters(transformed);
+  } catch (err) {
+    console.error("Failed to fetch default docking parameters", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleEditParameter = (parameter: Parameter) => {
     setEditingParameter(parameter);
@@ -69,34 +79,35 @@ export function ParameterConfiguration() {
 
     const formData = new FormData(e.currentTarget);
     const updatedValue = formData.get("parameterValue") as string;
-    const updatedDescription = formData.get("description") as string;
 
     const updatedParams = parameters.map((p) =>
       p.id === editingParameter.id
         ? {
-            ...p,
-            parameterValue: updatedValue,
-            description: updatedDescription,
-            updatedAt: new Date().toISOString(),
-          }
+          ...p,
+          parameterValue: updatedValue,
+          updatedBy: "system", // or set to the current user if available
+        }
         : p
     );
 
     setParameters(updatedParams);
     setEditingParameter(null);
     setShowEditDialog(false);
+    
 
     // Optional: Persist changes to your DB
     try {
-      await fetch(`/api/parameters/update`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      await fetch("/api/admin/parameters", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          parameterName: editingParameter.parameterName,
-          parameterValue: updatedValue,
-          description: updatedDescription,
+          [editingParameter.parameterName]: updatedValue,
         }),
       });
+      await fetchParams(); // <-- this will refetch and show updatedAt
+
     } catch (err) {
       console.error("Failed to update parameter in DB", err);
     }
@@ -114,6 +125,8 @@ export function ParameterConfiguration() {
       energyRange: "Energy Range (kcal/mol)",
       verbosity: "Verbosity Level",
       exhaustiveness: "Exhaustiveness",
+      updatedBy: "Updated By",
+      updatedAt: "Last Updated On",
     };
     return displayNames[name] || name;
   };
@@ -134,25 +147,29 @@ export function ParameterConfiguration() {
             <TableRow>
               <TableHead>Parameter</TableHead>
               <TableHead>Current Value</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Last Updated</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {parameters.map((param) => (
+            {parameters
+              .filter((param) => param.parameterName !== "id" && param.parameterName !== "updatedBy")
+              .map((param) => (
               <TableRow key={param.id}>
                 <TableCell className="font-medium">{getParameterDisplayName(param.parameterName)}</TableCell>
-                <TableCell>{param.parameterValue}</TableCell>
-                <TableCell className="truncate max-w-xs">{param.description}</TableCell>
-                <TableCell>{new Date(param.updatedAt).toLocaleDateString()}</TableCell>
                 <TableCell>
+                {param.parameterName === "updatedAt"
+                  ? formatDateTimeMY(new Date(param.parameterValue))
+                  : param.parameterValue}
+                </TableCell>
+                <TableCell>
+                {param.parameterName !== "updatedAt" && (
                   <Button variant="outline" size="sm" onClick={() => handleEditParameter(param)}>
-                    <Edit className="h-4 w-4" />
+                  <Edit className="h-4 w-4" />
                   </Button>
+                )}
                 </TableCell>
               </TableRow>
-            ))}
+              ))}
           </TableBody>
         </Table>
 
@@ -176,15 +193,6 @@ export function ParameterConfiguration() {
                       id="parameterValue"
                       name="parameterValue"
                       defaultValue={editingParameter.parameterValue}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Input
-                      id="description"
-                      name="description"
-                      defaultValue={editingParameter.description}
                       required
                     />
                   </div>
