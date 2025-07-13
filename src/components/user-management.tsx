@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,8 +33,8 @@ import {
 import { UserPlus, Edit, Trash2, Shield, User } from "lucide-react"
 import { getUsers, updateUser, addAdmin, deleteUser } from "@/lib/users"
 import { capitalize } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast";
-import { ToastVariant } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast"
+import { ToastVariant } from "@/hooks/use-toast"
 
 interface User {
   id: number
@@ -47,7 +46,11 @@ interface User {
   purpose: string
 }
 
-export function UserManagement() {
+interface UserManagementProps {
+  onUserCountChange?: () => void
+}
+
+export function UserManagement({ onUserCountChange }: UserManagementProps) {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -56,7 +59,7 @@ export function UserManagement() {
   const [successToast, setSuccessMsg] = useState<string | null>(null)
   const [errorToast, setErrorMsg] = useState<string | null>(null)
 
-  const { toast } = useToast();
+  const { toast } = useToast()
 
   useEffect(() => {
     if (successToast) {
@@ -64,18 +67,18 @@ export function UserManagement() {
         title: "Update Successful",
         description: successToast || "User information has been successfully updated.",
         variant: ToastVariant.SUCCESS,
-      });
-      setSuccessMsg(null);
+      })
+      setSuccessMsg(null)
     }
     if (errorToast) {
       toast({
         title: "Error Occured",
         description: errorToast || "An error occurred while processing your request.",
         variant: ToastVariant.ERROR,
-      });
-      setErrorMsg(null);
+      })
+      setErrorMsg(null)
     }
-  }, [successToast, errorToast, toast]);
+  }, [successToast, errorToast, toast])
 
   useEffect(() => {
     fetchUsers()
@@ -83,7 +86,7 @@ export function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const params = await getUsers();
+      const params = await getUsers()
       const transformed: User[] = params.map((user: any) => ({
         id: user.id,
         firstName: user.firstName,
@@ -92,12 +95,12 @@ export function UserManagement() {
         role: user.role,
         institution: user.institution,
         purpose: user.purpose,
-      }));
-      setUsers(transformed);
+      }))
+      setUsers(transformed)
     } catch (err) {
-      setErrorMsg(`Failed to fetch users: ${err instanceof Error ? err.message : "Unknown error"}`);
+      setErrorMsg(`Failed to fetch users: ${err instanceof Error ? err.message : "Unknown error"}`)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
@@ -106,6 +109,8 @@ export function UserManagement() {
       await deleteUser(id)
       setUsers(users.filter((user) => user.id !== id))
       setSuccessMsg("User deleted successfully.")
+      // Trigger stats refresh
+      onUserCountChange?.()
     } catch (err) {
       setErrorMsg(`Failed to delete user: ${err instanceof Error ? err.message : "Unknown error"}`)
     }
@@ -152,15 +157,17 @@ export function UserManagement() {
     }
 
     try {
-      console.log('Submitting user data:', userData) // Add this
+      console.log('Submitting user data:', userData)
       const result = await addAdmin(userData)
-      console.log('Add admin result:', result) // Add this
+      console.log('Add admin result:', result)
       setSuccessMsg("New admin added successfully.")
       setShowAddDialog(false)
       fetchUsers()
+      // Trigger stats refresh
+      onUserCountChange?.()
         ; (e.target as HTMLFormElement).reset()
     } catch (err) {
-      console.error('Add admin error:', err) // Add this
+      console.error('Add admin error:', err)
       setErrorMsg(`Failed to add admin: ${err}`)
     }
   }
@@ -306,7 +313,6 @@ export function UserManagement() {
                     </div>
                   </div>
 
-                  {/* Role field */}
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
                     {editingUser.role.toLowerCase() === "admin" ? (
@@ -361,5 +367,5 @@ export function UserManagement() {
         </Dialog>
       </CardContent>
     </Card>
-  );
+  )
 }

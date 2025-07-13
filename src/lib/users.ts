@@ -63,3 +63,15 @@ export async function deleteUser(id: number) {
     return { error: err.message };
   }
 }
+
+// count number of users
+export async function getUserCount() {
+  return getUsers().then(users => {
+    if (Array.isArray(users)) {
+      return users.length;
+    } else {
+      console.error('Failed to count users');
+      return 0;
+    }
+  });
+}
