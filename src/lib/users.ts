@@ -33,3 +33,33 @@ export async function updateUser(id: number, data: any) {
     return { error: err.message };
   }
 }
+
+//add admin 
+export async function addAdmin(data: any) {
+  try {
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) console.error('Failed to add admin')
+    return await res.json();
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+//delete user
+export async function deleteUser(id: number) {
+  try {
+    const res = await fetch(`/api/admin/users/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) console.error('Failed to delete user')
+    return await res.json();
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}

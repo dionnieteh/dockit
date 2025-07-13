@@ -32,7 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { UserPlus, Edit, Trash2, Shield, User } from "lucide-react"
-import { getUsers, updateUser } from "@/lib/users"
+import { getUsers, updateUser, addAdmin, deleteUser } from "@/lib/users"
 import { capitalize } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast";
 import { ToastVariant } from "@/hooks/use-toast";
@@ -101,17 +101,13 @@ export function UserManagement() {
     }
   }
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = async (id: number) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
-        method: "DELETE",
-      })
-
-      if (response.ok) {
-        setUsers(users.filter((user) => user.id !== userId))
-      }
-    } catch (error) {
-      console.error("Error deleting user:", error)
+      await deleteUser(id)
+      setUsers(users.filter((user) => user.id !== id))
+      setSuccessMsg("User deleted successfully.")
+    } catch (err) {
+      setErrorMsg(`Failed to delete user: ${err instanceof Error ? err.message : "Unknown error"}`)
     }
   }
 
@@ -144,7 +140,7 @@ export function UserManagement() {
     }
   }
 
-  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddAdmin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     const userData = {
@@ -153,27 +149,19 @@ export function UserManagement() {
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
       role: "Admin",
-      institution: formData.get("institution") as string,
-      purpose: formData.get("purpose") as string,
     }
 
     try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      })
-
-      if (response.ok) {
-        setShowAddDialog(false)
-        fetchUsers()
-          // Reset form
-          ; (e.target as HTMLFormElement).reset()
-      }
-    } catch (error) {
-      console.error("Error adding user:", error)
+      console.log('Submitting user data:', userData) // Add this
+      const result = await addAdmin(userData)
+      console.log('Add admin result:', result) // Add this
+      setSuccessMsg("New admin added successfully.")
+      setShowAddDialog(false)
+      fetchUsers()
+        ; (e.target as HTMLFormElement).reset()
+    } catch (err) {
+      console.error('Add admin error:', err) // Add this
+      setErrorMsg(`Failed to add admin: ${err}`)
     }
   }
 
@@ -193,7 +181,7 @@ export function UserManagement() {
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" />
-                Add User
+                Add Admin
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
@@ -201,7 +189,7 @@ export function UserManagement() {
                 <DialogTitle>Add New Admin</DialogTitle>
                 <DialogDescription>Create a new admin account</DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleAddUser}>
+              <form onSubmit={handleAddAdmin}>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -220,29 +208,6 @@ export function UserManagement() {
                       <Label htmlFor="lastName">Last Name</Label>
                       <Input id="lastName" name="lastName" required />
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select name="role" required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="researcher">Research Scientist</SelectItem>
-                        <SelectItem value="professor">Professor</SelectItem>
-                        <SelectItem value="postdoc">Postdoctoral Researcher</SelectItem>
-                        <SelectItem value="student">Graduate Student</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="institution">Institution</Label>
-                    <Input id="institution" name="institution" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="purpose">Research Purpose</Label>
-                    <Textarea id="purpose" name="purpose" required />
                   </div>
                 </div>
                 <DialogFooter className="mt-6">
@@ -345,7 +310,10 @@ export function UserManagement() {
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
                     {editingUser.role.toLowerCase() === "admin" ? (
-                      <Input id="role" name="role" value="Admin" disabled />
+                      <>
+                        <Input id="role" name="role" value="Admin" disabled />
+                        <input type="hidden" name="role" value="Admin" />
+                      </>
                     ) : (
                       <Select name="role" defaultValue={editingUser.role}>
                         <SelectTrigger>
@@ -361,32 +329,29 @@ export function UserManagement() {
                       </Select>
                     )}
                   </div>
-
-                  {/* Institution */}
-                  <div className="space-y-2">
-                    <Label htmlFor="institution">Institution</Label>
-                    <Input
-                      id="institution"
-                      name="institution"
-                      defaultValue={editingUser.institution}
-                      required
-                      disabled={editingUser.role.toLowerCase() === "admin"}
-                    />
-                  </div>
-
-                  {/* Research Purpose */}
-                  <div className="space-y-2">
-                    <Label htmlFor="purpose">Research Purpose</Label>
-                    <Textarea
-                      id="purpose"
-                      name="purpose"
-                      defaultValue={editingUser.purpose}
-                      required
-                      disabled={editingUser.role.toLowerCase() === "admin"}
-                    />
-                  </div>
                 </div>
-
+                {editingUser.role.toLowerCase() !== "admin" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="institution">Institution</Label>
+                      <Input
+                        id="institution"
+                        name="institution"
+                        defaultValue={editingUser.institution}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="purpose">Research Purpose</Label>
+                      <Textarea
+                        id="purpose"
+                        name="purpose"
+                        defaultValue={editingUser.purpose}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
                 <DialogFooter className="mt-6">
                   <Button type="submit">Update User</Button>
                 </DialogFooter>
