@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getDefaultParameters } from '@/lib/get-default-param'
+import { getDefaultParameters } from '@/lib/param'
 
 
 export default function NewJobPage() {

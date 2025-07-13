@@ -31,18 +31,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { UserPlus, Edit, Trash2, Shield } from "lucide-react"
+import { UserPlus, Edit, Trash2, Shield, User } from "lucide-react"
+import { getUsers, updateUser } from "@/lib/users"
+import { capitalize } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast";
+import { ToastVariant } from "@/hooks/use-toast";
 
 interface User {
   id: number
-  email: string
   firstName: string
   lastName: string
+  email: string
   role: string
   institution: string
-  researchPurpose: string
-  isAdmin: boolean
-  createdAt: string
+  purpose: string
 }
 
 export function UserManagement() {
@@ -51,6 +53,29 @@ export function UserManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [successToast, setSuccessMsg] = useState<string | null>(null)
+  const [errorToast, setErrorMsg] = useState<string | null>(null)
+
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (successToast) {
+      toast({
+        title: "Update Successful",
+        description: successToast || "User information has been successfully updated.",
+        variant: ToastVariant.SUCCESS,
+      });
+      setSuccessMsg(null);
+    }
+    if (errorToast) {
+      toast({
+        title: "Error Occured",
+        description: errorToast || "An error occurred while processing your request.",
+        variant: ToastVariant.ERROR,
+      });
+      setErrorMsg(null);
+    }
+  }, [successToast, errorToast, toast]);
 
   useEffect(() => {
     fetchUsers()
@@ -58,15 +83,21 @@ export function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/admin/users")
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data.users)
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error)
+      const params = await getUsers();
+      const transformed: User[] = params.map((user: any) => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        institution: user.institution,
+        purpose: user.purpose,
+      }));
+      setUsers(transformed);
+    } catch (err) {
+      setErrorMsg(`Failed to fetch users: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -81,20 +112,6 @@ export function UserManagement() {
       }
     } catch (error) {
       console.error("Error deleting user:", error)
-    }
-  }
-
-  const handleMakeAdmin = async (userId: number) => {
-    try {
-      const response = await fetch(`/api/admin/users/${userId}/make-admin`, {
-        method: "POST",
-      })
-
-      if (response.ok) {
-        fetchUsers() // Refresh the list
-      }
-    } catch (error) {
-      console.error("Error making user admin:", error)
     }
   }
 
@@ -113,25 +130,17 @@ export function UserManagement() {
       lastName: formData.get("lastName") as string,
       role: formData.get("role") as string,
       institution: formData.get("institution") as string,
-      researchPurpose: formData.get("researchPurpose") as string,
+      purpose: formData.get("purpose") as string,
     }
 
     try {
-      const response = await fetch(`/api/admin/users/${editingUser.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      })
-
-      if (response.ok) {
-        setShowEditDialog(false)
-        setEditingUser(null)
-        fetchUsers()
-      }
-    } catch (error) {
-      console.error("Error updating user:", error)
+      await updateUser(editingUser.id, userData)
+      setSuccessMsg("User information updated successfully.")
+      setUsers(users.map((user) => (user.id === editingUser.id ? { ...user, ...userData } : user)))
+      setShowEditDialog(false)
+      setEditingUser(null)
+    } catch (err) {
+      setErrorMsg(`Failed to update user: ${err}`)
     }
   }
 
@@ -143,10 +152,9 @@ export function UserManagement() {
       password: formData.get("password") as string,
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
-      role: formData.get("role") as string,
+      role: "Admin",
       institution: formData.get("institution") as string,
-      researchPurpose: formData.get("researchPurpose") as string,
-      isAdmin: formData.get("isAdmin") === "true",
+      purpose: formData.get("purpose") as string,
     }
 
     try {
@@ -161,8 +169,8 @@ export function UserManagement() {
       if (response.ok) {
         setShowAddDialog(false)
         fetchUsers()
-        // Reset form
-        ;(e.target as HTMLFormElement).reset()
+          // Reset form
+          ; (e.target as HTMLFormElement).reset()
       }
     } catch (error) {
       console.error("Error adding user:", error)
@@ -190,8 +198,8 @@ export function UserManagement() {
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Add New User</DialogTitle>
-                <DialogDescription>Create a new user account</DialogDescription>
+                <DialogTitle>Add New Admin</DialogTitle>
+                <DialogDescription>Create a new admin account</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddUser}>
                 <div className="space-y-4">
@@ -233,20 +241,8 @@ export function UserManagement() {
                     <Input id="institution" name="institution" required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="researchPurpose">Research Purpose</Label>
-                    <Textarea id="researchPurpose" name="researchPurpose" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="isAdmin">User Type</Label>
-                    <Select name="isAdmin">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select user type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="false">Regular User</SelectItem>
-                        <SelectItem value="true">Administrator</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="purpose">Research Purpose</Label>
+                    <Textarea id="purpose" name="purpose" required />
                   </div>
                 </div>
                 <DialogFooter className="mt-6">
@@ -277,25 +273,17 @@ export function UserManagement() {
                 <TableCell>{user.role}</TableCell>
                 <TableCell>{user.institution}</TableCell>
                 <TableCell>
-                  {user.isAdmin ? (
-                    <Badge variant="destructive">
-                      <Shield className="mr-1 h-3 w-3" />
-                      Admin
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary">User</Badge>
-                  )}
+                  <Badge variant="destructive">
+                    {user.role.toLowerCase() === "admin" ?
+                      <Shield className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />
+                    }
+                    {capitalize(user.role)}</Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
                     <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    {!user.isAdmin && (
-                      <Button variant="outline" size="sm" onClick={() => handleMakeAdmin(user.id)}>
-                        <Shield className="h-4 w-4" />
-                      </Button>
-                    )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="outline" size="sm">
@@ -322,55 +310,83 @@ export function UserManagement() {
           </TableBody>
         </Table>
 
-        {/* Edit User Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
               <DialogDescription>Update user information</DialogDescription>
             </DialogHeader>
+
             {editingUser && (
               <form onSubmit={handleUpdateUser}>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" name="firstName" defaultValue={editingUser.firstName} required />
+                      <Input
+                        id="firstName"
+                        name="firstName"
+                        defaultValue={editingUser.firstName}
+                        required
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" name="lastName" defaultValue={editingUser.lastName} required />
+                      <Input
+                        id="lastName"
+                        name="lastName"
+                        defaultValue={editingUser.lastName}
+                        required
+                      />
                     </div>
                   </div>
+
+                  {/* Role field */}
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select name="role" defaultValue={editingUser.role}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="researcher">Research Scientist</SelectItem>
-                        <SelectItem value="professor">Professor</SelectItem>
-                        <SelectItem value="postdoc">Postdoctoral Researcher</SelectItem>
-                        <SelectItem value="student">Graduate Student</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {editingUser.role.toLowerCase() === "admin" ? (
+                      <Input id="role" name="role" value="Admin" disabled />
+                    ) : (
+                      <Select name="role" defaultValue={editingUser.role}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="researcher">Research Scientist</SelectItem>
+                          <SelectItem value="professor">Professor</SelectItem>
+                          <SelectItem value="postdoc">Postdoctoral Researcher</SelectItem>
+                          <SelectItem value="student">Graduate Student</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
+
+                  {/* Institution */}
                   <div className="space-y-2">
                     <Label htmlFor="institution">Institution</Label>
-                    <Input id="institution" name="institution" defaultValue={editingUser.institution} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="researchPurpose">Research Purpose</Label>
-                    <Textarea
-                      id="researchPurpose"
-                      name="researchPurpose"
-                      defaultValue={editingUser.researchPurpose}
+                    <Input
+                      id="institution"
+                      name="institution"
+                      defaultValue={editingUser.institution}
                       required
+                      disabled={editingUser.role.toLowerCase() === "admin"}
+                    />
+                  </div>
+
+                  {/* Research Purpose */}
+                  <div className="space-y-2">
+                    <Label htmlFor="purpose">Research Purpose</Label>
+                    <Textarea
+                      id="purpose"
+                      name="purpose"
+                      defaultValue={editingUser.purpose}
+                      required
+                      disabled={editingUser.role.toLowerCase() === "admin"}
                     />
                   </div>
                 </div>
+
                 <DialogFooter className="mt-6">
                   <Button type="submit">Update User</Button>
                 </DialogFooter>
@@ -380,5 +396,5 @@ export function UserManagement() {
         </Dialog>
       </CardContent>
     </Card>
-  )
+  );
 }

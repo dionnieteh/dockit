@@ -8,8 +8,14 @@ type Toast = {
   description?: string;
   action?: React.ReactNode;
   duration?: number;
-  variant?: "default" | "destructive";
+  variant?: ToastVariant;
 };
+
+enum ToastVariant {
+  ERROR = "error",
+  SUCCESS = "success",
+  DEFAULT = "default",
+}
 
 type ToastContextType = {
   toasts: Toast[];
@@ -29,8 +35,24 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const toast = React.useCallback((props: Omit<Toast, "id">) => {
     const id = crypto.randomUUID();
-    const newToast: Toast = { id, duration: 5000, ...props }; // default 5s
-    setToasts((prev) => [...prev, newToast]);
+    let emoji = "";
+    switch (props.variant) {
+      case "error":
+        emoji = "❌ ";
+        break;
+      case "success":
+        emoji = "✅ ";
+        break;
+      default:
+        emoji = ""; // fallback for undefined variant
+    }
+
+    const newToast: Toast = {
+      id,
+      duration: 5000,
+      ...props,
+      title: emoji + (props.title ?? ""), // prepend emoji to title
+    }; setToasts((prev) => [...prev, newToast]);
 
     // ✅ Create audio inside the function (client-only)
     // ✅ Play sound only on client
@@ -73,3 +95,5 @@ export function useToast() {
   }
   return context;
 }
+
+export { ToastVariant };

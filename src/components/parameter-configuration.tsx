@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getDefaultParameters } from "@/lib/get-default-param";
+import { getDefaultParameters, updateDefaultParameter} from "@/lib/param";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Save, Edit } from "lucide-react";
+import { formatDateTimeMY } from "@/lib/utils";
 
 interface Parameter {
   id: number;
@@ -29,23 +30,6 @@ export function ParameterConfiguration() {
   const [loading, setLoading] = useState(true);
   const [editingParameter, setEditingParameter] = useState<Parameter | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const formatDateTimeMY = (date: Date) => {
-  const options: Intl.DateTimeFormatOptions = {
-    timeZone: "Asia/Kuala_Lumpur",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  };
-
-  const parts = new Intl.DateTimeFormat("en-GB", options).formatToParts(date);
-  const get = (type: string) => parts.find(p => p.type === type)?.value;
-
-  return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
-};
 
   useEffect(() => {
   fetchParams();
@@ -93,24 +77,14 @@ const fetchParams = async () => {
     setParameters(updatedParams);
     setEditingParameter(null);
     setShowEditDialog(false);
+
+    const res = await updateDefaultParameter(editingParameter.parameterName, updatedValue);
     
-
-    // Optional: Persist changes to your DB
-    try {
-      await fetch("/api/admin/parameters", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          [editingParameter.parameterName]: updatedValue,
-        }),
-      });
-      await fetchParams(); // <-- this will refetch and show updatedAt
-
-    } catch (err) {
-      console.error("Failed to update parameter in DB", err);
-    }
+    if (res.error)
+      console.error("Failed to update parameter in DB", res.error);
+    else
+      
+      await fetchParams(); // Refetch to ensure we have the latest data
   };
 
   const getParameterDisplayName = (name: string) => {
