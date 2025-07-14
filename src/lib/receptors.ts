@@ -17,21 +17,21 @@ export async function getReceptors() {
   }
 }
 
-// export async function updateUser(id: number, data: any) {
-//   try {
-//     const res = await fetch(`/api/admin/users/${id}`, {
-//       method: 'PUT',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify(data),
-//     });
-//     if (!res.ok) console.error('Failed to update user')
-//     return await res.json();
-//   } catch (err: any) {
-//     return { error: err.message };
-//   }
-// }
+export async function updateReceptor(id: number, data: any) {
+  try {
+    const res = await fetch(`/api/admin/receptors/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) console.error('Failed to update receptor file')
+    return await res.json();
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
 
 //add receptors 
 export async function addReceptor(data: any) {

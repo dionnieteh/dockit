@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -30,9 +29,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Upload, Trash2, Download } from "lucide-react"
+import { Upload, Trash2, Download, Edit } from "lucide-react"
 import { supabase } from '@/lib/supabase' // Adjust the import path as needed
-import { addReceptor, getReceptors } from "@/lib/receptors" // Adjust the import path as needed
+import { addReceptor, getReceptors, updateReceptor } from "@/lib/receptors" // Adjust the import path as needed
 import { formatDateTimeMY } from "@/lib/utils"
 
 interface ReceptorFile {
@@ -49,6 +48,9 @@ export function ReceptorManagement() {
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [editingReceptor, setEditingReceptor] = useState<ReceptorFile | null>(null)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+
 
   useEffect(() => {
     fetchReceptors()
@@ -185,24 +187,6 @@ export function ReceptorManagement() {
     }
   }
 
-  const handleToggleActive = async (receptorId: number, isActive: boolean) => {
-    try {
-      const response = await fetch(`/api/admin/receptors/${receptorId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ isActive: !isActive }),
-      })
-
-      if (response.ok) {
-        fetchReceptors()
-      }
-    } catch (error) {
-      console.error("Error updating receptor:", error)
-    }
-  }
-
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes"
     const k = 1024
@@ -213,6 +197,42 @@ export function ReceptorManagement() {
 
   if (loading) {
     return <div>Loading receptors...</div>
+  }
+
+  const handleEditReceptor = (receptor: ReceptorFile) => {
+    setEditingReceptor(receptor)
+    setShowEditDialog(true)
+  }
+
+  const handleUpdateReceptor = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!editingReceptor) return
+
+    const formData = new FormData(e.currentTarget)
+    const updatedName = formData.get("name") as string
+    const updatedDescription = formData.get("description") as string
+
+    const response = await updateReceptor(editingReceptor.id, {
+      name: updatedName,
+      description: updatedDescription,
+      filePath: editingReceptor.filePath, // Keep the same file path
+      fileSize: editingReceptor.fileSize, // Keep the same file size
+    })
+
+    if (response.ok) {
+      setReceptors((prev) =>
+        prev.map((r) =>
+          r.id === editingReceptor.id
+            ? { ...r, name: updatedName, description: updatedDescription }
+            : r
+        )
+      )
+      setShowEditDialog(false)
+      setEditingReceptor(null)
+    } else {
+      setShowEditDialog(false)
+      alert("Failed to update receptor info.")
+    }
   }
 
   return (
@@ -278,7 +298,6 @@ export function ReceptorManagement() {
               <TableHead>Description</TableHead>
               <TableHead>File Size</TableHead>
               <TableHead>Uploaded On</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -288,11 +307,11 @@ export function ReceptorManagement() {
                 <TableCell className="font-medium">{receptor.name}</TableCell>
                 <TableCell className="max-w-xs truncate">{receptor.description}</TableCell>
                 <TableCell>{formatFileSize(receptor.fileSize)}</TableCell>
-                <TableCell>{receptor.uploadedOn}</TableCell>
+                <TableCell>{formatDateTimeMY(new Date(receptor.uploadedOn))}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4" />
+                    <Button variant="outline" size="sm" onClick={() => handleEditReceptor(receptor)}>
+                      <Edit className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -321,6 +340,42 @@ export function ReceptorManagement() {
             ))}
           </TableBody>
         </Table>
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Receptor Info</DialogTitle>
+              <DialogDescription>Update name or description of this receptor file</DialogDescription>
+            </DialogHeader>
+
+            {editingReceptor && (
+              <form onSubmit={handleUpdateReceptor}>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Receptor Name</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      defaultValue={editingReceptor.name}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      defaultValue={editingReceptor.description}
+                      required
+                    />
+                  </div>
+                </div>
+                <DialogFooter className="mt-6">
+                  <Button type="submit">Update Receptor</Button>
+                </DialogFooter>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   )

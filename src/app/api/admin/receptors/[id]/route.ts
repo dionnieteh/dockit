@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { supabase } from "@/lib/supabase";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const receptorId = parseInt(params.id);
@@ -38,3 +39,34 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return new Response(JSON.stringify({ message: "Server error" }), { status: 500 });
   }
 }
+
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+  try {
+  const { id: id2 } = await context.params;
+    
+    const id = parseInt(id2);  // ✅ convert to number
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Invalid receptor file ID" }, { status: 400 });
+    }
+
+    const body = await req.json()
+    console.log('Updating receptor file with body:', id, body)
+
+    const updatedReceptor = await prisma.receptorFile.update({
+      where: { id },
+      data: {
+        name: body.name,
+        description: body.description,
+        filePath: body.filePath,
+        fileSize: body.fileSize,
+        uploadedOn: new Date(), // Update the uploaded date to now
+      },
+    })
+
+    return NextResponse.json(updatedReceptor)
+  } catch (err) {
+    console.error('Failed to update receptor file:', err)
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 })
+  }
+}
+
