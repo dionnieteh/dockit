@@ -1,5 +1,31 @@
-// import { NextRequest, NextResponse } from 'next/server'
-// import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    
+    const receptor = await prisma.receptorFile.create({
+      data: {
+        name: body.name,
+        description: body.description,
+        filePath: body.filePath, // Assuming filePath is provided in the request
+        fileSize: body.fileSize, // Assuming createdBy is provided in the request
+        uploadedOn: new Date(),
+      },
+    });
+
+    console.log('Receptor created:', receptor)
+
+    return NextResponse.json(receptor)
+  } catch (err) {
+    console.error('Failed to create receptor:', err)
+    return NextResponse.json({ 
+      error: 'Failed to create receptor' 
+    }, { status: 500 })
+  }
+}
 
 // export async function GET(request: NextRequest) {
 //   try {
@@ -15,25 +41,5 @@
 //   } catch (err) {
 //     console.error('Failed to fetch default parameters:', err)
 //     return NextResponse.json({ error: 'Server error' }, { status: 500 })
-//   }
-// }
-
-// // PUT /api/admin/parameters
-// export async function PUT(request: NextRequest) {
-//   try {
-//     const body = await request.json();
-
-//     const updated = await prisma.defaultParameters.update({
-//       where: { id: 1 },
-//       data: {
-//         ...body, // this assumes body contains fields like gridSizeX, centerX, etc.
-//         updatedAt: new Date(),
-//       },
-//     });
-
-//     return NextResponse.json(updated);
-//   } catch (err) {
-//     console.error('Failed to update default parameters:', err);
-//     return NextResponse.json({ error: 'Update failed' }, { status: 500 });
 //   }
 // }

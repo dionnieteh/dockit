@@ -52,8 +52,8 @@ model ReceptorFile {
   name        String   @db.VarChar(255)
   description String?
   filePath    String   @db.VarChar(255)
-  fileSize    Int
   uploadedOn  DateTime @default(now())
+  fileSize    Int
 }
 
 model DefaultParameters {

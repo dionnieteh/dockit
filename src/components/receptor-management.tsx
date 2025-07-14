@@ -31,15 +31,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Upload, Trash2, Download } from "lucide-react"
+// import { createClient } from '@/utils/supabase/client'
+import { createClient } from '@supabase/supabase-js'
 
 interface ReceptorFile {
   id: number
   name: string
   description: string
+  filePath: number
   fileSize: number
-  uploadedBy: string
-  isActive: boolean
-  createdAt: string
 }
 
 export function ReceptorManagement() {
@@ -47,6 +47,8 @@ export function ReceptorManagement() {
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   useEffect(() => {
     fetchReceptors()
@@ -70,7 +72,7 @@ export function ReceptorManagement() {
     const file = e.target.files?.[0]
     if (file) {
       // Validate file type
-      const allowedTypes = [".pdb", ".pdbqt"]
+      const allowedTypes = [".pdbqt"]
       const fileExtension = "." + file.name.split(".").pop()?.toLowerCase()
 
       if (!allowedTypes.includes(fileExtension)) {
@@ -82,30 +84,94 @@ export function ReceptorManagement() {
     }
   }
 
-  const handleUploadReceptor = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!selectedFile) return
 
-    const formData = new FormData(e.currentTarget)
-    formData.append("file", selectedFile)
+const handleUploadReceptor = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault()
+  if (!selectedFile) return
 
-    try {
-      const response = await fetch("/api/admin/receptors", {
-        method: "POST",
-        body: formData,
+  // 1. File type validation - PDBQT only
+  const allowedTypes = ['.pdbqt']
+  const fileExtension = '.' + selectedFile.name.split('.').pop()?.toLowerCase()
+  
+  if (!allowedTypes.includes(fileExtension)) {
+    alert('Only PDBQT files are allowed')
+    return
+  }
+
+  // 2. File size limit (e.g., 10MB)
+  const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+  if (selectedFile.size > maxSize) {
+    alert('File size must be less than 10MB')
+    return
+  }
+
+  // 3. File name sanitization
+  const sanitizedFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+
+  const formData = new FormData(e.currentTarget)
+  const name = formData.get('name') as string
+  const description = formData.get('description') as string
+
+  // 4. Content validation (basic)
+  const fileContent = await selectedFile.text()
+  if (!fileContent.includes('ATOM') && !fileContent.includes('HETATM')) {
+    alert('File does not appear to be a valid PDB/PDBQT file')
+    return
+  }
+
+  try {
+    // Upload with restrictions
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('receptors')
+      .upload(`receptors/${Date.now()}_${sanitizedFileName}`, selectedFile, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: 'text/plain' // Force content type
       })
 
-      if (response.ok) {
-        setShowAddDialog(false)
-        setSelectedFile(null)
-        fetchReceptors()
-        // Reset form
-        ;(e.target as HTMLFormElement).reset()
-      }
-    } catch (error) {
-      console.error("Error uploading receptor:", error)
+    if (uploadError) {
+      console.error("Upload error:", uploadError)
+      alert("Failed to upload file: " + uploadError.message)
+      return
     }
+
+    // Save metadata
+    const receptorData = {
+      name: sanitizedFileName,
+      description: description,
+      fileSize: selectedFile.size, // Store size in bytes
+      filePath: uploadData.path,
+      // uploadedOn: new Date().toISOString()
+    }
+
+    const response = await fetch("/api/admin/receptors", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(receptorData),
+    })
+
+    if (response.ok) {
+      setShowAddDialog(false)
+      setSelectedFile(null)
+      fetchReceptors()
+      ;(e.target as HTMLFormElement).reset()
+    } else {
+      // Clean up uploaded file if database save fails
+      await supabase.storage
+        .from('receptors')
+        .remove([uploadData.path])
+      
+      const errorData = await response.json()
+      alert("Failed to save receptor data: " + errorData.message)
+    }
+
+  } catch (error) {
+    console.error("Error uploading receptor:", error)
+    alert("An error occurred while uploading the receptor")
   }
+}
 
   const handleDeleteReceptor = async (receptorId: number) => {
     try {

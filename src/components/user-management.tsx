@@ -33,8 +33,7 @@ import {
 import { UserPlus, Edit, Trash2, Shield, User } from "lucide-react"
 import { getUsers, updateUser, addAdmin, deleteUser } from "@/lib/users"
 import { capitalize } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
-import { ToastVariant } from "@/hooks/use-toast"
+import { useToast, ToastVariant } from "@/hooks/use-toast"
 
 interface User {
   id: number
@@ -233,7 +232,7 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Institution</TableHead>
-              <TableHead>Type</TableHead>
+              <TableHead>Purpose</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -242,8 +241,6 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
               <TableRow key={user.id}>
                 <TableCell>{`${user.firstName} ${user.lastName}`}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell>{user.institution}</TableCell>
                 <TableCell>
                   <Badge variant="destructive">
                     {user.role.toLowerCase() === "admin" ?
@@ -251,6 +248,8 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
                     }
                     {capitalize(user.role)}</Badge>
                 </TableCell>
+                <TableCell>{user.institution}</TableCell>
+                <TableCell>{user.purpose}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
                     <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
