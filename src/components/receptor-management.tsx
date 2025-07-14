@@ -31,8 +31,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Upload, Trash2, Download } from "lucide-react"
-// import { createClient } from '@/utils/supabase/client'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase' // Adjust the import path as needed
+import { addReceptor, getReceptors } from "@/lib/receptors" // Adjust the import path as needed
+import { formatDateTimeMY } from "@/lib/utils"
 
 interface ReceptorFile {
   id: number
@@ -40,6 +41,7 @@ interface ReceptorFile {
   description: string
   filePath: number
   fileSize: number
+  uploadedOn: string
 }
 
 export function ReceptorManagement() {
@@ -47,8 +49,6 @@ export function ReceptorManagement() {
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
 
   useEffect(() => {
     fetchReceptors()
@@ -56,11 +56,16 @@ export function ReceptorManagement() {
 
   const fetchReceptors = async () => {
     try {
-      const response = await fetch("/api/admin/receptors")
-      if (response.ok) {
-        const data = await response.json()
-        setReceptors(data.receptors)
-      }
+      const params = await getReceptors()
+      const transformed: ReceptorFile[] = params.map((receptor: any) => ({
+        id: receptor.id,
+        name: receptor.name,
+        description: receptor.description,
+        filePath: receptor.filePath,
+        fileSize: receptor.fileSize,
+        uploadedOn: receptor.uploadedOn,
+      }))
+      setReceptors(transformed)
     } catch (error) {
       console.error("Error fetching receptors:", error)
     } finally {
@@ -85,93 +90,86 @@ export function ReceptorManagement() {
   }
 
 
-const handleUploadReceptor = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault()
-  if (!selectedFile) return
+  const handleUploadReceptor = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!selectedFile) return
 
-  // 1. File type validation - PDBQT only
-  const allowedTypes = ['.pdbqt']
-  const fileExtension = '.' + selectedFile.name.split('.').pop()?.toLowerCase()
-  
-  if (!allowedTypes.includes(fileExtension)) {
-    alert('Only PDBQT files are allowed')
-    return
-  }
+    // 1. File type validation - PDBQT only
+    const allowedTypes = ['.pdbqt']
+    const fileExtension = '.' + selectedFile.name.split('.').pop()?.toLowerCase()
 
-  // 2. File size limit (e.g., 10MB)
-  const maxSize = 10 * 1024 * 1024 // 10MB in bytes
-  if (selectedFile.size > maxSize) {
-    alert('File size must be less than 10MB')
-    return
-  }
-
-  // 3. File name sanitization
-  const sanitizedFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-
-  const formData = new FormData(e.currentTarget)
-  const name = formData.get('name') as string
-  const description = formData.get('description') as string
-
-  // 4. Content validation (basic)
-  const fileContent = await selectedFile.text()
-  if (!fileContent.includes('ATOM') && !fileContent.includes('HETATM')) {
-    alert('File does not appear to be a valid PDB/PDBQT file')
-    return
-  }
-
-  try {
-    // Upload with restrictions
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('receptors')
-      .upload(`receptors/${Date.now()}_${sanitizedFileName}`, selectedFile, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: 'text/plain' // Force content type
-      })
-
-    if (uploadError) {
-      console.error("Upload error:", uploadError)
-      alert("Failed to upload file: " + uploadError.message)
+    if (!allowedTypes.includes(fileExtension)) {
+      alert('Only PDBQT files are allowed')
       return
     }
 
-    // Save metadata
-    const receptorData = {
-      name: sanitizedFileName,
-      description: description,
-      fileSize: selectedFile.size, // Store size in bytes
-      filePath: uploadData.path,
-      // uploadedOn: new Date().toISOString()
+    // 2. File size limit (e.g., 10MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+    if (selectedFile.size > maxSize) {
+      alert('File size must be less than 10MB')
+      return
     }
 
-    const response = await fetch("/api/admin/receptors", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(receptorData),
-    })
+    // 3. File name sanitization
+    const sanitizedFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
 
-    if (response.ok) {
-      setShowAddDialog(false)
-      setSelectedFile(null)
-      fetchReceptors()
-      ;(e.target as HTMLFormElement).reset()
-    } else {
-      // Clean up uploaded file if database save fails
-      await supabase.storage
+    const formData = new FormData(e.currentTarget)
+    const name = formData.get('name') as string
+    const description = formData.get('description') as string
+
+    // 4. Content validation (basic)
+    const fileContent = await selectedFile.text()
+    if (!fileContent.includes('ATOM') && !fileContent.includes('HETATM')) {
+      alert('File does not appear to be a valid PDB/PDBQT file')
+      return
+    }
+
+    try {
+      // Upload with restrictions
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('receptors')
-        .remove([uploadData.path])
-      
-      const errorData = await response.json()
-      alert("Failed to save receptor data: " + errorData.message)
-    }
+        .upload(`receptors/${formatDateTimeMY(new Date)}_${sanitizedFileName}`, selectedFile, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'text/plain' // Force content type
+        })
 
-  } catch (error) {
-    console.error("Error uploading receptor:", error)
-    alert("An error occurred while uploading the receptor")
+      if (uploadError) {
+        console.error("Upload error:", uploadError)
+        alert("Failed to upload file: " + uploadError.message)
+        return
+      }
+
+      // Save metadata
+      const receptorData = {
+        name: sanitizedFileName,
+        description: description,
+        fileSize: selectedFile.size, // Store size in bytes
+        filePath: uploadData.path,
+        // uploadedOn: new Date().toISOString()
+      }
+
+      const response = await addReceptor(receptorData)
+
+      if (response) {
+        setShowAddDialog(false)
+        setSelectedFile(null)
+        fetchReceptors()
+          ; (e.target as HTMLFormElement).reset()
+      } else {
+        // Clean up uploaded file if database save fails
+        await supabase.storage
+          .from('receptors')
+          .remove([uploadData.path])
+
+        alert("Failed to save receptor data: " + response)
+      }
+
+    } catch (error) {
+      console.error("Error uploading receptor:", error)
+      alert("An error occurred while uploading the receptor")
+    }
   }
-}
 
   const handleDeleteReceptor = async (receptorId: number) => {
     try {
@@ -279,7 +277,7 @@ const handleUploadReceptor = async (e: React.FormEvent<HTMLFormElement>) => {
               <TableHead>Name</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>File Size</TableHead>
-              <TableHead>Uploaded By</TableHead>
+              <TableHead>Uploaded On</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -290,16 +288,7 @@ const handleUploadReceptor = async (e: React.FormEvent<HTMLFormElement>) => {
                 <TableCell className="font-medium">{receptor.name}</TableCell>
                 <TableCell className="max-w-xs truncate">{receptor.description}</TableCell>
                 <TableCell>{formatFileSize(receptor.fileSize)}</TableCell>
-                <TableCell>{receptor.uploadedBy}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={receptor.isActive ? "default" : "secondary"}
-                    className="cursor-pointer"
-                    onClick={() => handleToggleActive(receptor.id, receptor.isActive)}
-                  >
-                    {receptor.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
+                <TableCell>{receptor.uploadedOn}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
                     <Button variant="outline" size="sm">

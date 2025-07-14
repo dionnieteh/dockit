@@ -27,19 +27,12 @@ export async function POST(req: Request) {
   }
 }
 
-// export async function GET(request: NextRequest) {
-//   try {
-//     const params = await prisma.receptorFile.findUnique({
-//       where: { id: 1 },
-//     })
-
-//     if (!params) {
-//       return NextResponse.json({ error: 'Default parameters not found' }, { status: 404 })
-//     }
-
-//     return NextResponse.json(params)
-//   } catch (err) {
-//     console.error('Failed to fetch default parameters:', err)
-//     return NextResponse.json({ error: 'Server error' }, { status: 500 })
-//   }
-// }
+export async function GET(req: NextRequest) {
+  try {
+    const users = await prisma.receptorFile.findMany()
+    return NextResponse.json(users)
+  } catch (err) {
+    console.error('Failed to fetch users:', err)
+    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
+  }
+}

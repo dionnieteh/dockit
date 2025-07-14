@@ -1,22 +1,21 @@
 //src/lib/receptors.ts
-// export async function getUsers() {
-//   try {
-//     const res = await fetch('/api/admin/users')
-//     if (!res.ok) console.error('Failed to load users')
-//     const users = await res.json();
-//     return users.map((user: any) => ({
-//       id: user.id,
-//       firstName: user.firstName,
-//       lastName: user.lastName,
-//       email: user.email,
-//       role: user.role,
-//       institution: user.institution,
-//       purpose: user.purpose,
-//     }));
-//   } catch (err: any) {
-//     return { error: err.message }
-//   }
-// }
+export async function getReceptors() {
+  try {
+    const res = await fetch('/api/admin/receptors')
+    if (!res.ok) console.error('Failed to load receptors')
+    const receptors = await res.json();
+    return receptors.map((receptor: any) => ({
+      id: receptor.id,
+      name: receptor.name,
+      description: receptor.description,
+      filePath: receptor.filePath,
+      fileSize: receptor.fileSize,
+      uploadedOn: receptor.uploadedOn,
+    }));
+  } catch (err: any) {
+    return { error: err.message }
+  }
+}
 
 // export async function updateUser(id: number, data: any) {
 //   try {
@@ -45,7 +44,7 @@ export async function addReceptor(data: any) {
       body: JSON.stringify(data),
     });
     if (!res.ok) console.error('Failed to add receptor')
-    return await res.json();
+    return res;
   } catch (err: any) {
     return { error: err.message };
   }
