@@ -11,6 +11,7 @@ const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
 const ASSETS_DIR = path.join(process.cwd(), "src", "assets");
 
 export async function POST(req: Request) {
+  let jobId = "0"
   try {
     const form = await req.formData();
     const parsedMetadata = parseJobMetadata(form);
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
       }
     )
 
-    const jobId = jobMetadata.id;
+    jobId = jobMetadata.id;
     const jobDir = path.join(process.cwd(), "jobs", `job-${jobId}`);
     await saveUploadedFiles(ligandFiles, jobDir);
 
@@ -50,27 +51,33 @@ export async function POST(req: Request) {
     await convertLigandsToPdbqt(ligandPaths);
 
     // Step 3: Prepare receptor
-    const receptorPath = await getPreparedReceptorPath("3c5x.pdb"); // customize if dynamic
+    const receptorPath = await getPreparedReceptorPath("3c5x.pdb");
 
     // Step 4: Docking
-    await dockLigands(ligandPaths, receptorPath, parsedMetadata);
+    await dockLigands(ligandPaths, receptorPath, parsedMetadata, jobId);
 
     // Step 5: Zip outputs
     const zipPath = path.join(jobDir, "results.zip");
     await zipModel1Outputs(jobDir, zipPath);
-    
-
 
     // Step 6: Update DB status
     await prisma.job.update({
       where: { id: jobId },
-      data: { status: "complete" },
+      data: {
+        status: "complete",
+        completedAt: new Date()
+      },
     });
-
     return NextResponse.json({ ...jobMetadata, id: jobId });
   } catch (err) {
-    console.error("Docking job error:", err);
-    return NextResponse.json({ error: "Docking job failed" }, { status: 500 });
+    await prisma.job.update({
+      where: { id: jobId },
+      data: {
+      status: "error",
+      errorMessage: err instanceof Error ? err.message : String(err)
+      },
+    });
+    return NextResponse.json({ error: "Docking job failed" + err });
   }
 }
 
@@ -81,9 +88,9 @@ function parseJobMetadata(form: FormData) {
     gridSizeX: parseInt(form.get("gridSizeX") as string),
     gridSizeY: parseInt(form.get("gridSizeY") as string),
     gridSizeZ: parseInt(form.get("gridSizeZ") as string),
-    centerX: parseFloat(form.get("centerX") as string),
-    centerY: parseFloat(form.get("centerY") as string),
-    centerZ: parseFloat(form.get("centerZ") as string),
+    centerX: form.get("centerX") as string,
+    centerY: form.get("centerY") as string,
+    centerZ: form.get("centerZ") as string,
     numModes: parseInt(form.get("numModes") as string),
     energyRange: parseInt(form.get("energyRange") as string),
     verbosity: parseInt(form.get("verbosity") as string),
@@ -134,7 +141,13 @@ async function getPreparedReceptorPath(filename: string): Promise<string> {
   return pdbqtPath;
 }
 
-async function dockLigands(ligandPaths: string[], receptorPath: string, config: any) {
+async function dockLigands(ligandPaths: string[], receptorPath: string, config: any, jobId: string) {
+  await prisma.job.update({
+    where: { id: jobId },
+    data: {
+      status: "processing",
+    },
+  });
   for (const pdbqt of ligandPaths.map((p) => p.replace(/\.pdb$/, ".pdbqt"))) {
     const outFile = pdbqt.replace(".pdbqt", "_out.pdbqt");
 
@@ -187,13 +200,17 @@ function runCommand(cmd: string, args: string[]) {
 }
 
 async function extractModel1Only(inputPath: string, outputPath: string) {
-  const content = await fs.readFile(inputPath, "utf-8");
+  try {
+    const content = await fs.readFile(inputPath, "utf-8");
 
-  const model1 = content.split(/MODEL\s+1[\r\n]+/)[1]?.split(/ENDMDL/)[0];
-  if (!model1) throw new Error("MODEL 1 not found in output");
+    const model1 = content.split(/MODEL\s+1[\r\n]+/)[1]?.split(/ENDMDL/)[0];
+    if (!model1) throw new Error(`MODEL 1 not found in ${inputPath}`);
 
-  const finalContent = `MODEL 1\n${model1.trim()}\nENDMDL\n`;
-  await fs.writeFile(outputPath, finalContent, "utf-8");
+    const finalContent = `MODEL 1\n${model1.trim()}\nENDMDL\n`;
+    await fs.writeFile(outputPath, finalContent, "utf-8");
+  } catch (err) {
+    throw new Error(`Failed to extract MODEL 1 from ${inputPath}: ${err}`);
+  }
 }
 
 async function zipModel1Outputs(jobDir: string, zipPath: string) {

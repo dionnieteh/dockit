@@ -71,17 +71,7 @@ export const TOAST = {
     description: "An error occurred while fetching statistics: ",
     variant: ToastVariant.ERROR,
   },
-  DOCKING_START_SUCCESS: {
-    title: "Docking Job Started Successfully",
-    description: "Your docking job has been initiated.",
-    variant: ToastVariant.SUCCESS,
-  },
-  DOCKING_START_ERROR: {
-    title: "Docking Job Failed to Start",
-    description: "An error occurred while starting the docking job: ",
-    variant: ToastVariant.ERROR,
-  },
-  DOCKING_PROCESS_COMPLETE: {
+  DOCKING_PROCESS_SUCCESS: {
     title: "Docking Job Completed Successfully",
     description: "Your docking job has been completed.",
     variant: ToastVariant.SUCCESS,
