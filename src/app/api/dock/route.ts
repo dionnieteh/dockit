@@ -1,3 +1,4 @@
+// src/app/api/dock/route.ts
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
@@ -10,54 +11,76 @@ const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
 const ASSETS_DIR = path.join(process.cwd(), "src", "assets");
 
 export async function POST(req: Request) {
-  const form = await req.formData();
-  const jobMetadata = parseJobMetadata(form);
-  const files = form.getAll("files") as File[];
-
-  const job = await createJobInDB(jobMetadata);
-  const jobDir = path.join("/tmp", job.id.toString());
-  await saveUploadedFiles(files, jobDir);
-
-  const ligandPaths = files.map((f) => path.join(jobDir, f.name));
-
   try {
+    const form = await req.formData();
+    const parsedMetadata = parseJobMetadata(form);
+    const ligandFiles = form.getAll("files") as File[];
+
+    if (!ligandFiles.length) {
+      return NextResponse.json({ error: "No ligand files uploaded" }, { status: 400 });
+    }
+
+    // Step 1: Create job entry in DB
+    const jobMetadata = await prisma.job.create(
+      {
+        data: {
+          userId: parsedMetadata.userId,
+          name: parsedMetadata.name,
+          status: "queued",
+          gridSizeX: parsedMetadata.gridSizeX,
+          gridSizeY: parsedMetadata.gridSizeY,
+          gridSizeZ: parsedMetadata.gridSizeZ,
+          centerX: parsedMetadata.centerX,
+          centerY: parsedMetadata.centerY,
+          centerZ: parsedMetadata.centerZ,
+          energyRange: parsedMetadata.energyRange,
+          exhaustiveness: parsedMetadata.exhaustiveness,
+          numModes: parsedMetadata.numModes,
+          verbosity: parsedMetadata.verbosity,
+        },
+      }
+    )
+
+    const jobId = jobMetadata.id;
+    const jobDir = path.join(process.cwd(), "jobs", `job-${jobId}`);
+    await saveUploadedFiles(ligandFiles, jobDir);
+
+    // Step 2: Convert ligands
+    const ligandPaths = ligandFiles.map(file => path.join(jobDir, file.name));
     await convertLigandsToPdbqt(ligandPaths);
 
-    const receptorPath = await getPreparedReceptorPath("3c5x.pdb");
+    // Step 3: Prepare receptor
+    const receptorPath = await getPreparedReceptorPath("3c5x.pdb"); // customize if dynamic
 
-    await dockLigands(ligandPaths, receptorPath, jobMetadata);
+    // Step 4: Docking
+    await dockLigands(ligandPaths, receptorPath, parsedMetadata);
 
+    // Step 5: Zip outputs
     const zipPath = path.join(jobDir, "results.zip");
     await zipModel1Outputs(jobDir, zipPath);
+    
 
 
+    // Step 6: Update DB status
     await prisma.job.update({
-      where: { id: job.id },
-      data: { status: "complete", completedAt: new Date() },
+      where: { id: jobId },
+      data: { status: "complete" },
     });
 
-    return NextResponse.json({ jobId: job.id, success: true });
+    return NextResponse.json({ ...jobMetadata, id: jobId });
   } catch (err) {
-    await prisma.job.update({
-      where: { id: job.id },
-      data: { status: "error", errorMessage: (err as Error).message },
-    });
-    return NextResponse.json(
-      { success: false, error: (err as Error).message },
-      { status: 500 }
-    );
+    console.error("Docking job error:", err);
+    return NextResponse.json({ error: "Docking job failed" }, { status: 500 });
   }
 }
-
-// -------------------- Utility Functions --------------------
 
 function parseJobMetadata(form: FormData) {
   return {
     userId: parseInt(form.get("userId") as string),
     name: form.get("name") as string,
-    gridSizeX: parseInt(form.get("gridX") as string),
-    gridSizeY: parseInt(form.get("gridY") as string),
-    gridSizeZ: parseInt(form.get("gridZ") as string),
+    gridSizeX: parseInt(form.get("gridSizeX") as string),
+    gridSizeY: parseInt(form.get("gridSizeY") as string),
+    gridSizeZ: parseInt(form.get("gridSizeZ") as string),
     centerX: parseFloat(form.get("centerX") as string),
     centerY: parseFloat(form.get("centerY") as string),
     centerZ: parseFloat(form.get("centerZ") as string),
@@ -66,20 +89,6 @@ function parseJobMetadata(form: FormData) {
     verbosity: parseInt(form.get("verbosity") as string),
     exhaustiveness: parseInt(form.get("exhaustiveness") as string),
   };
-}
-
-async function createJobInDB(metadata: any) {
-  return await prisma.job.create({
-    data: {
-      name: metadata.name,
-      status: "processing",
-      gridSizeX: metadata.gridSizeX,
-      gridSizeY: metadata.gridSizeY,
-      gridSizeZ: metadata.gridSizeZ,
-      updatedAt: new Date(),
-      userId: metadata.userId,
-    },
-  });
 }
 
 async function saveUploadedFiles(files: File[], jobDir: string) {

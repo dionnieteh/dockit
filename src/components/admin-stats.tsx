@@ -6,6 +6,7 @@ import React, { useEffect, useState, useCallback } from "react"
 import { getReceptorCount } from "@/lib/receptors"
 import { useToast } from "@/hooks/use-toast"
 import { TOAST } from "@/lib/toast-messages"
+import { getJobCount } from "@/lib/jobs"
 
 export function AdminStats() {
   const [totalUsers, setTotalUsers] = useState(0)
@@ -36,6 +37,10 @@ export function AdminStats() {
         setTotalReceptors(0)
         throw new Error(receptorCount.error)
       }
+
+      const jobCount = await getJobCount()
+      
+
     } catch (error) {
       console.error("Failed to fetch stats:", error)
       toast({

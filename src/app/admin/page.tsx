@@ -7,6 +7,7 @@ import { DashboardShell } from "@/components/dashboard-shell"
 import { UserManagement } from "@/components/user-management"
 import { ReceptorManagement } from "@/components/receptor-management"
 import { ParameterConfiguration } from "@/components/parameter-configuration"
+import { JobConfiguration } from "@/components/job-configuration"
 import { AdminStats } from "@/components/admin-stats"
 
 export default function AdminDashboard() {
@@ -20,10 +21,6 @@ export default function AdminDashboard() {
     setRefreshKey(prev => prev + 1)
   }, [])
 
-  const handleJobCountChange = useCallback(() => {
-    setRefreshKey(prev => prev + 1)
-  }, [])
-
   return (
     <DashboardShell>
       <DashboardHeader heading="Admin Dashboard" text="Manage users, receptors, and system configuration." />
@@ -34,6 +31,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="receptors">Receptor Files</TabsTrigger>
           <TabsTrigger value="parameters">Default Parameters</TabsTrigger>
+          <TabsTrigger value="jobs">Jobs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-4">
@@ -46,6 +44,10 @@ export default function AdminDashboard() {
 
         <TabsContent value="parameters" className="space-y-4">
           <ParameterConfiguration />
+        </TabsContent>
+
+        <TabsContent value="jobs" className="space-y-4">
+          <JobConfiguration />
         </TabsContent>
       </Tabs>
     </DashboardShell>

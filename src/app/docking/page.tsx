@@ -1,3 +1,4 @@
+// src/app/docking/page.tsx
 "use client";
 
 import type React from "react";
@@ -16,7 +17,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Info, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getDefaultParameters } from '@/lib/param'
-
+import { addJob } from "@/lib/jobs";
+import { TOAST } from "@/lib/toast-messages";
 
 export default function NewJobPage() {
   const [defaultParams, setDefaultParams] = useState<any | null>(null)
@@ -41,17 +43,7 @@ export default function NewJobPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [uploadKey, setUploadKey] = useState(0);
 
-
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (jobId) {
-      toast({
-        title: "Docking Complete ✅",
-        description: "Your job has finished processing!",
-      });
-    }
-  }, [jobId, toast]);
 
   useEffect(() => {
     const fetchParams = async () => {
@@ -75,7 +67,6 @@ export default function NewJobPage() {
 
     fetchParams()
   }, [])
-
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -144,9 +135,9 @@ export default function NewJobPage() {
     const formData = new FormData();
     formData.append("userId", user?.id.toString() || "0");
     formData.append("name", jobName);
-    formData.append("gridX", gridSizeX.toString());
-    formData.append("gridY", gridSizeY.toString());
-    formData.append("gridZ", gridSizeZ.toString());
+    formData.append("gridSizeX", gridSizeX.toString());
+    formData.append("gridSizeY", gridSizeY.toString());
+    formData.append("gridSizeZ", gridSizeZ.toString());
     formData.append("centerX", centerX.toString());
     formData.append("centerY", centerY.toString());
     formData.append("centerZ", centerZ.toString());
@@ -156,20 +147,26 @@ export default function NewJobPage() {
     formData.append("exhaustiveness", exhaustiveness.toString());
     files.forEach((f) => formData.append("files", f));
 
-    const res = await fetch("/api/dock", {
-      method: "POST",
-      credentials: "include",
-      body: formData,
-    });
+    try {
+      const responseData = await addJob(formData);
+      if (responseData.error) throw new Error(responseData.error);
 
-    if (!res.ok) {
-      if (res.status === 401) router.replace("/login");
-      else throw new Error("Docking error");
+      console.log("Docking job started successfully", responseData);
+      const { id: jobId } = responseData;
+      setJobId(jobId);
+      toast({
+        title: TOAST.DOCKING_START_SUCCESS.title,
+        description: TOAST.DOCKING_START_SUCCESS.description,
+        variant: TOAST.DOCKING_START_SUCCESS.variant,
+      });
+    } catch (error: any) {
+      setIsSubmitting(false);
+      toast({
+        title: TOAST.DOCKING_START_ERROR.title,
+        description: TOAST.DOCKING_START_ERROR.description + error.message,
+        variant: TOAST.DOCKING_START_ERROR.variant,
+      });
     }
-
-    const { jobId } = await res.json();
-    setJobId(jobId);
-
   }
 
   if (!defaultParams || isCheckingAuth) {
@@ -199,12 +196,11 @@ export default function NewJobPage() {
     );
   }
 
-  if (!user) return null;
+  // if (!user) return null;
 
   return (
     <DashboardShell>
       <DashboardHeader heading="New Docking Job" text="Configure and run a new molecular docking simulation." />
-
       <div className="mb-6">
         <Alert>
           <Info className="h-4 w-4" />
@@ -314,7 +310,7 @@ export default function NewJobPage() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <a
                   href={`/api/download/${jobId}`}
-                  download
+                  download={`results_${jobId}.zip`}
                   className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
                 >
                   Download Results
@@ -325,7 +321,6 @@ export default function NewJobPage() {
               </div>
             )}
           </CardFooter>
-
         </form>
       </Card>
     </DashboardShell>

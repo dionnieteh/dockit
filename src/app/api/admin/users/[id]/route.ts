@@ -1,17 +1,17 @@
-// src/app/api/admin/users/[id]/route.ts
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+// PUT: Update user details
+export async function PUT(req: NextRequest) {
   try {
-  const { id: id2 } = await context.params;
-    
-    const id = parseInt(id2);
+    const url = new URL(req.url);
+    const id = parseInt(url.pathname.split("/").pop() || "");
+
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
-    const body = await req.json()
+    const body = await req.json();
 
     const updatedUser = await prisma.user.update({
       where: { id },
@@ -19,34 +19,35 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
         firstName: body.firstName,
         lastName: body.lastName,
         role: body.role,
-        institution: body.institution ? body.institution : "", // ✅ handle optional field
-        purpose: body.purpose ? body.purpose : "", // ✅ handle optional field
+        institution: body.institution || "",
+        purpose: body.purpose || "",
       },
-    })
+    });
 
-    return NextResponse.json(updatedUser)
+    return NextResponse.json(updatedUser);
   } catch (err) {
-    console.error('Failed to update user:', err)
-    return NextResponse.json({ error: 'Update failed' }, { status: 500 })
+    console.error("Failed to update user:", err);
+    return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 }
 
-//create function to delete user
-export async function DELETE(req: NextRequest, { params }: { params: { id: string
-} }) {
+// DELETE: Delete a user by ID
+export async function DELETE(req: NextRequest) {
   try {
-    const id = parseInt(params.id)  // ✅ convert to number
+    const url = new URL(req.url);
+    const id = parseInt(url.pathname.split("/").pop() || "");
+
     if (isNaN(id)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
     await prisma.user.delete({
       where: { id },
-    })
+    });
 
-    return NextResponse.json({ message: "User deleted successfully" })
+    return NextResponse.json({ message: "User deleted successfully" });
   } catch (err) {
-    console.error('Failed to delete user:', err)
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 })
+    console.error("Failed to delete user:", err);
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
   }
 }

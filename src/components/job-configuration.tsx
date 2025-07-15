@@ -25,7 +25,7 @@ interface Parameter {
   updatedBy: string;
 }
 
-export function ParameterConfiguration() {
+export function JobConfiguration() {
   const [parameters, setParameters] = useState<Parameter[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingParameter, setEditingParameter] = useState<Parameter | null>(null);

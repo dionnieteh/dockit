@@ -28,7 +28,10 @@ export function refreshUserStats() {
     try {
       setLoading(true)
       const userCount = await getUserCount()
-      setTotalUsers(userCount)
+      if (typeof userCount === 'object' && 'error' in userCount) {
+        throw new Error(userCount.error)
+      } else if (typeof userCount === 'number')
+        setTotalUsers(userCount)
     } catch (error) {
       console.error("Failed to fetch user count:", error)
     } finally {

@@ -1,3 +1,4 @@
+//src/app/api/download/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
@@ -8,7 +9,7 @@ export async function GET(
 ) {
   const params = await context.params;
   const id = params.id;
-  const zipPath = path.join("/tmp", id, "results.zip");
+  const zipPath = path.join(process.cwd(), "jobs", `job-${id}`, "results.zip");
 
   try {
     await fs.access(zipPath);

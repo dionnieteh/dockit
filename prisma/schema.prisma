@@ -41,13 +41,13 @@ model Job {
   errorMessage   String?
   createdAt      DateTime  @default(now())
   completedAt    DateTime?
-  centerX        String
-  centerY        String
-  centerZ        String
-  energyRange    String
-  exhaustiveness String
-  numModes       String
-  verbosity      String
+  centerX        Int
+  centerY        Int
+  centerZ        Int
+  energyRange    Int
+  exhaustiveness Int
+  numModes       Int
+  verbosity      Int
   user           User      @relation(fields: [userId], references: [id])
 }
 
