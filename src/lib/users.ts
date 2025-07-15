@@ -1,4 +1,4 @@
-//src/lib/users.ts
+// src/lib/users.ts
 export async function getUsers() {
   try {
     const res = await fetch('/api/admin/users')
@@ -34,7 +34,6 @@ export async function updateUser(id: number, data: any) {
   }
 }
 
-//add admin 
 export async function addAdmin(data: any) {
   try {
     const res = await fetch('/api/admin/users', {
@@ -51,7 +50,6 @@ export async function addAdmin(data: any) {
   }
 }
 
-//delete user
 export async function deleteUser(id: number) {
   try {
     const res = await fetch(`/api/admin/users/${id}`, {
@@ -64,7 +62,6 @@ export async function deleteUser(id: number) {
   }
 }
 
-// count number of users
 export async function getUserCount() {
   return getUsers().then(users => {
     if (Array.isArray(users)) {

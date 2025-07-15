@@ -1,3 +1,4 @@
+// src/lib/utils.ts
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -23,7 +24,6 @@ export function formatDateTimeMY(date: Date): string {
   return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`
 }
 
-// capitalize the first letter of a string
 export function capitalize(str: string): string {
   if (!str) return str
   return str.charAt(0).toUpperCase() + str.slice(1)

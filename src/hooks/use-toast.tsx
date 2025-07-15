@@ -1,3 +1,4 @@
+// src/hooks/use-toast.tsx
 "use client";
 
 import * as React from "react";
@@ -44,18 +45,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         emoji = "✅ ";
         break;
       default:
-        emoji = ""; // fallback for undefined variant
+        emoji = "";
     }
 
     const newToast: Toast = {
       id,
       duration: 5000,
       ...props,
-      title: emoji + (props.title ?? ""), // prepend emoji to title
+      title: emoji + (props.title ? props.title : "Notification"),
     }; setToasts((prev) => [...prev, newToast]);
 
-    // ✅ Create audio inside the function (client-only)
-    // ✅ Play sound only on client
     if (typeof window !== "undefined") {
       try {
         const ding = new Audio("/ding.mp3");
@@ -64,7 +63,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         console.warn("Failed to play ding sound", e);
       }
     }
-
 
     if (newToast.duration) {
       setTimeout(() => {

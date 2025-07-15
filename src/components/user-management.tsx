@@ -33,7 +33,8 @@ import {
 import { UserPlus, Edit, Trash2, Shield, User } from "lucide-react"
 import { getUsers, updateUser, addAdmin, deleteUser } from "@/lib/users"
 import { capitalize } from "@/lib/utils"
-import { useToast, ToastVariant } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
+import { TOAST } from "@/lib/toast-messages"
 
 interface User {
   id: number
@@ -55,29 +56,8 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
-  const [successToast, setSuccessMsg] = useState<string | null>(null)
-  const [errorToast, setErrorMsg] = useState<string | null>(null)
 
   const { toast } = useToast()
-
-  useEffect(() => {
-    if (successToast) {
-      toast({
-        title: "Update Successful",
-        description: successToast || "User information has been successfully updated.",
-        variant: ToastVariant.SUCCESS,
-      })
-      setSuccessMsg(null)
-    }
-    if (errorToast) {
-      toast({
-        title: "Error Occured",
-        description: errorToast || "An error occurred while processing your request.",
-        variant: ToastVariant.ERROR,
-      })
-      setErrorMsg(null)
-    }
-  }, [successToast, errorToast, toast])
 
   useEffect(() => {
     fetchUsers()
@@ -96,8 +76,18 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
         purpose: user.purpose,
       }))
       setUsers(transformed)
+      // TODO: check if in use, for checking
+      // toast({
+      //   title: "User " + TOAST.GET_SUCCESS.title,
+      //   description: TOAST.GET_SUCCESS.description,
+      //   variant: TOAST.GET_SUCCESS.variant,
+      // })
     } catch (err) {
-      setErrorMsg(`Failed to fetch users: ${err instanceof Error ? err.message : "Unknown error"}`)
+      toast({
+        title: "User " + TOAST.GET_ERROR.title,
+        description: TOAST.GET_ERROR.description + (err ? err : "Unknown error"),
+        variant: TOAST.GET_ERROR.variant,
+      })
     } finally {
       setLoading(false)
     }
@@ -107,11 +97,18 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
     try {
       await deleteUser(id)
       setUsers(users.filter((user) => user.id !== id))
-      setSuccessMsg("User deleted successfully.")
-      // Trigger stats refresh
       onUserCountChange?.()
+      toast({
+        title: "User " + TOAST.DELETE_SUCCESS.title,
+        description: TOAST.DELETE_SUCCESS.description,
+        variant: TOAST.DELETE_SUCCESS.variant,
+      })
     } catch (err) {
-      setErrorMsg(`Failed to delete user: ${err instanceof Error ? err.message : "Unknown error"}`)
+      toast({
+        title: "User " + TOAST.DELETE_ERROR.title,
+        description: TOAST.DELETE_ERROR.description + (err ? err : "Unknown error"),
+        variant: TOAST.DELETE_ERROR.variant,
+      })
     }
   }
 
@@ -135,12 +132,20 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
 
     try {
       await updateUser(editingUser.id, userData)
-      setSuccessMsg("User information updated successfully.")
+      toast({
+        title: "User " + TOAST.UPDATE_SUCCESS.title,
+        description: TOAST.UPDATE_SUCCESS.description,
+        variant: TOAST.UPDATE_SUCCESS.variant,
+      })
       setUsers(users.map((user) => (user.id === editingUser.id ? { ...user, ...userData } : user)))
       setShowEditDialog(false)
       setEditingUser(null)
     } catch (err) {
-      setErrorMsg(`Failed to update user: ${err}`)
+      toast({
+        title: "User " + TOAST.UPDATE_ERROR.title,
+        description: TOAST.UPDATE_ERROR.description + (err ? err : "Unknown error"),
+        variant: TOAST.UPDATE_ERROR.variant,
+      })
     }
   }
 
@@ -156,23 +161,27 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
     }
 
     try {
-      console.log('Submitting user data:', userData)
-      const result = await addAdmin(userData)
-      console.log('Add admin result:', result)
-      setSuccessMsg("New admin added successfully.")
+      await addAdmin(userData)
+      toast({
+        title: "Admin " + TOAST.CREATE_SUCCESS.title,
+        description: TOAST.CREATE_SUCCESS.description,
+        variant: TOAST.CREATE_SUCCESS.variant,
+      })
       setShowAddDialog(false)
       fetchUsers()
-      // Trigger stats refresh
       onUserCountChange?.()
         ; (e.target as HTMLFormElement).reset()
     } catch (err) {
-      console.error('Add admin error:', err)
-      setErrorMsg(`Failed to add admin: ${err}`)
+      toast({
+        title: "Admin " + TOAST.CREATE_ERROR.title,
+        description: TOAST.CREATE_ERROR.description + (err ? err : "Unknown error"),
+        variant: TOAST.CREATE_ERROR.variant,
+      })
     }
   }
 
   if (loading) {
-    return <div>Loading users...</div>
+    return <div className="px-4">Loading users...</div>
   }
 
   return (
