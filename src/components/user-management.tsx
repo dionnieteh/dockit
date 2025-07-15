@@ -93,25 +93,6 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
     }
   }
 
-  const handleDeleteUser = async (id: number) => {
-    try {
-      await deleteUser(id)
-      setUsers(users.filter((user) => user.id !== id))
-      onUserCountChange?.()
-      toast({
-        title: "User " + TOAST.DELETE_SUCCESS.title,
-        description: TOAST.DELETE_SUCCESS.description,
-        variant: TOAST.DELETE_SUCCESS.variant,
-      })
-    } catch (err) {
-      toast({
-        title: "User " + TOAST.DELETE_ERROR.title,
-        description: TOAST.DELETE_ERROR.description + (err ? err : "Unknown error"),
-        variant: TOAST.DELETE_ERROR.variant,
-      })
-    }
-  }
-
   const handleEditUser = (user: User) => {
     setEditingUser(user)
     setShowEditDialog(true)
@@ -176,6 +157,25 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
         title: "Admin " + TOAST.CREATE_ERROR.title,
         description: TOAST.CREATE_ERROR.description + (err ? err : "Unknown error"),
         variant: TOAST.CREATE_ERROR.variant,
+      })
+    }
+  }
+
+  const handleDeleteUser = async (id: number) => {
+    try {
+      await deleteUser(id)
+      setUsers(users.filter((user) => user.id !== id))
+      onUserCountChange?.()
+      toast({
+        title: "User " + TOAST.DELETE_SUCCESS.title,
+        description: TOAST.DELETE_SUCCESS.description,
+        variant: TOAST.DELETE_SUCCESS.variant,
+      })
+    } catch (err) {
+      toast({
+        title: "User " + TOAST.DELETE_ERROR.title,
+        description: TOAST.DELETE_ERROR.description + (err ? err : "Unknown error"),
+        variant: TOAST.DELETE_ERROR.variant,
       })
     }
   }

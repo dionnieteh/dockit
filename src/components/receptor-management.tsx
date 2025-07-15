@@ -29,10 +29,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Upload, Trash2, Download, Edit } from "lucide-react"
-import { supabase } from '@/lib/supabase' // Adjust the import path as needed
-import { addReceptor, getReceptors, updateReceptor } from "@/lib/receptors" // Adjust the import path as needed
+import { Upload, Trash2, Edit } from "lucide-react"
+import { supabase } from '@/lib/supabase'
+import { addReceptor, deleteReceptor, getReceptors, updateReceptor } from "@/lib/receptors" // Adjust the import path as needed
 import { formatDateTimeMY } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
+import { TOAST } from "@/lib/toast-messages"
 
 interface ReceptorFile {
   id: number
@@ -43,14 +45,19 @@ interface ReceptorFile {
   uploadedOn: string
 }
 
-export function ReceptorManagement() {
+interface ReceptorManagementProps {
+  onFileCountChange?: () => void
+}
+
+export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProps) {
   const [receptors, setReceptors] = useState<ReceptorFile[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [editingReceptor, setEditingReceptor] = useState<ReceptorFile | null>(null)
+  const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchReceptors()
@@ -58,8 +65,13 @@ export function ReceptorManagement() {
 
   const fetchReceptors = async () => {
     try {
-      const params = await getReceptors()
-      const transformed: ReceptorFile[] = params.map((receptor: any) => ({
+      const res = await getReceptors()
+
+      if (res.error) {
+        throw new Error(res.error);
+      }
+
+      const transformed: ReceptorFile[] = res.map((receptor: any) => ({
         id: receptor.id,
         name: receptor.name,
         description: receptor.description,
@@ -68,8 +80,12 @@ export function ReceptorManagement() {
         uploadedOn: receptor.uploadedOn,
       }))
       setReceptors(transformed)
-    } catch (error) {
-      console.error("Error fetching receptors:", error)
+    } catch (err) {
+      toast({
+        title: "Receptor " + TOAST.GET_ERROR.title,
+        description: TOAST.GET_ERROR.description + (err ? err : "Unknown error"),
+        variant: TOAST.GET_ERROR.variant,
+      })
     } finally {
       setLoading(false)
     }
@@ -78,12 +94,11 @@ export function ReceptorManagement() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Validate file type
       const allowedTypes = [".pdbqt"]
       const fileExtension = "." + file.name.split(".").pop()?.toLowerCase()
 
       if (!allowedTypes.includes(fileExtension)) {
-        alert("Please select a PDB or PDBQT file")
+        alert("Please select a PDBQT file")
         return
       }
 
@@ -91,12 +106,10 @@ export function ReceptorManagement() {
     }
   }
 
-
   const handleUploadReceptor = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!selectedFile) return
 
-    // 1. File type validation - PDBQT only
     const allowedTypes = ['.pdbqt']
     const fileExtension = '.' + selectedFile.name.split('.').pop()?.toLowerCase()
 
@@ -105,21 +118,18 @@ export function ReceptorManagement() {
       return
     }
 
-    // 2. File size limit (e.g., 10MB)
     const maxSize = 10 * 1024 * 1024 // 10MB in bytes
     if (selectedFile.size > maxSize) {
       alert('File size must be less than 10MB')
       return
     }
 
-    // 3. File name sanitization
     const sanitizedFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
 
     const formData = new FormData(e.currentTarget)
     const name = formData.get('name') as string
     const description = formData.get('description') as string
 
-    // 4. Content validation (basic)
     const fileContent = await selectedFile.text()
     if (!fileContent.includes('ATOM') && !fileContent.includes('HETATM')) {
       alert('File does not appear to be a valid PDB/PDBQT file')
@@ -127,63 +137,53 @@ export function ReceptorManagement() {
     }
 
     try {
-      // Upload with restrictions
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('receptors')
         .upload(`receptors/${formatDateTimeMY(new Date)}_${sanitizedFileName}`, selectedFile, {
           cacheControl: '3600',
           upsert: false,
-          contentType: 'text/plain' // Force content type
+          contentType: 'text/plain'
         })
 
       if (uploadError) {
-        console.error("Upload error:", uploadError)
-        alert("Failed to upload file: " + uploadError.message)
-        return
+        throw new Error(uploadError.message)
       }
 
-      // Save metadata
       const receptorData = {
         name: sanitizedFileName,
         description: description,
-        fileSize: selectedFile.size, // Store size in bytes
+        fileSize: selectedFile.size,
         filePath: uploadData.path,
-        // uploadedOn: new Date().toISOString()
       }
 
       const response = await addReceptor(receptorData)
 
       if (response) {
+        toast({
+          title: "Receptor " + TOAST.FILE_CREATE_SUCCESS.title,
+          description: TOAST.FILE_CREATE_SUCCESS.description,
+          variant: TOAST.FILE_CREATE_SUCCESS.variant,
+        })
         setShowAddDialog(false)
         setSelectedFile(null)
         fetchReceptors()
+        onFileCountChange?.()
           ; (e.target as HTMLFormElement).reset()
       } else {
-        // Clean up uploaded file if database save fails
         await supabase.storage
           .from('receptors')
           .remove([uploadData.path])
 
-        alert("Failed to save receptor data: " + response)
+        throw new Error("Failed to add receptor to database, removed file from supabase: " + response)
       }
 
     } catch (error) {
       console.error("Error uploading receptor:", error)
-      alert("An error occurred while uploading the receptor")
-    }
-  }
-
-  const handleDeleteReceptor = async (receptorId: number) => {
-    try {
-      const response = await fetch(`/api/admin/receptors/${receptorId}`, {
-        method: "DELETE",
+      toast({
+        title: "Receptor " + TOAST.FILE_CREATE_ERROR.title,
+        description: TOAST.FILE_CREATE_ERROR.description + (error ? error : "Unknown error"),
+        variant: TOAST.FILE_CREATE_ERROR.variant,
       })
-
-      if (response.ok) {
-        setReceptors(receptors.filter((receptor) => receptor.id !== receptorId))
-      }
-    } catch (error) {
-      console.error("Error deleting receptor:", error)
     }
   }
 
@@ -193,10 +193,6 @@ export function ReceptorManagement() {
     const sizes = ["Bytes", "KB", "MB", "GB"]
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-  }
-
-  if (loading) {
-    return <div>Loading receptors...</div>
   }
 
   const handleEditReceptor = (receptor: ReceptorFile) => {
@@ -212,14 +208,17 @@ export function ReceptorManagement() {
     const updatedName = formData.get("name") as string
     const updatedDescription = formData.get("description") as string
 
-    const response = await updateReceptor(editingReceptor.id, {
-      name: updatedName,
-      description: updatedDescription,
-      filePath: editingReceptor.filePath, // Keep the same file path
-      fileSize: editingReceptor.fileSize, // Keep the same file size
-    })
+    try {
+      const res = await updateReceptor(editingReceptor.id, {
+        name: updatedName,
+        description: updatedDescription,
+        filePath: editingReceptor.filePath,
+        fileSize: editingReceptor.fileSize
+      })
 
-    if (response.ok) {
+      if (res.error) {
+        throw new Error(res.error)
+      }
       setReceptors((prev) =>
         prev.map((r) =>
           r.id === editingReceptor.id
@@ -227,12 +226,48 @@ export function ReceptorManagement() {
             : r
         )
       )
-      setShowEditDialog(false)
       setEditingReceptor(null)
-    } else {
-      setShowEditDialog(false)
-      alert("Failed to update receptor info.")
+      toast({
+        title: "Receptor " + TOAST.UPDATE_SUCCESS.title,
+        description: TOAST.UPDATE_SUCCESS.description,
+        variant: TOAST.UPDATE_SUCCESS.variant
+      });
+    } catch (error) {
+      toast({
+        title: "Receptor " + TOAST.UPDATE_ERROR.title,
+        description: TOAST.UPDATE_ERROR.description + (error ? error : "Unknown error"),
+        variant: TOAST.UPDATE_ERROR.variant
+      });
     }
+    setShowEditDialog(false)
+  }
+
+  const handleDeleteReceptor = async (receptorId: number) => {
+    try {
+      const res = await deleteReceptor(receptorId);
+
+      if (res.error) {
+        throw new Error(res.error);
+      }
+
+      setReceptors(receptors.filter((receptor) => receptor.id !== receptorId));
+      onFileCountChange?.();
+      toast({
+        title: "Receptor " + TOAST.DELETE_SUCCESS.title,
+        description: TOAST.DELETE_SUCCESS.description,
+        variant: TOAST.DELETE_SUCCESS.variant
+      });
+    } catch (error) {
+      toast({
+        title: "Receptor " + TOAST.DELETE_ERROR.title,
+        description: TOAST.DELETE_ERROR.description + (error ? error : "Unknown error"),
+        variant: TOAST.DELETE_ERROR.variant
+      });
+    }
+  };
+
+  if (loading) {
+    return <div className="px-4">Loading receptors...</div>
   }
 
   return (
@@ -241,7 +276,7 @@ export function ReceptorManagement() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Receptor File Management</CardTitle>
-            <CardDescription>Manage receptor files available for docking jobs</CardDescription>
+            <CardDescription>Manage receptor files for docking jobs</CardDescription>
           </div>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
@@ -252,7 +287,7 @@ export function ReceptorManagement() {
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Upload Receptor File</DialogTitle>
+                <DialogTitle>Upload New Receptor File</DialogTitle>
                 <DialogDescription>Add a new receptor file to the library</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleUploadReceptor}>

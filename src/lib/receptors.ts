@@ -2,7 +2,8 @@
 export async function getReceptors() {
   try {
     const res = await fetch('/api/admin/receptors')
-    if (!res.ok) console.error('Failed to load receptors')
+    if (!res.ok)
+      throw new Error(`Failed to load receptors: ${res.status} ${res.statusText}`);
     const receptors = await res.json();
     return receptors.map((receptor: any) => ({
       id: receptor.id,
@@ -13,6 +14,7 @@ export async function getReceptors() {
       uploadedOn: receptor.uploadedOn,
     }));
   } catch (err: any) {
+    console.error(err.message)
     return { error: err.message }
   }
 }
@@ -26,14 +28,15 @@ export async function updateReceptor(id: number, data: any) {
       },
       body: JSON.stringify(data),
     });
-    if (!res.ok) console.error('Failed to update receptor file')
+    if (!res.ok)
+      throw new Error(`Failed to update receptor: ${res.status} ${res.statusText}`);
     return await res.json();
   } catch (err: any) {
+    console.error(err.message)
     return { error: err.message };
   }
 }
 
-//add receptors 
 export async function addReceptor(data: any) {
   try {
     const res = await fetch('/api/admin/receptors', {
@@ -43,34 +46,40 @@ export async function addReceptor(data: any) {
       },
       body: JSON.stringify(data),
     });
-    if (!res.ok) console.error('Failed to add receptor')
+    if (!res.ok)
+      throw new Error(`Failed to add receptor: ${res.status} ${res.statusText}`);
     return res;
   } catch (err: any) {
+    console.error(err.message)
     return { error: err.message };
   }
 }
 
-// // delete user
-// export async function deleteUser(id: number) {
-//   try {
-//     const res = await fetch(`/api/admin/users/${id}`, {
-//       method: 'DELETE',
-//     });
-//     if (!res.ok) console.error('Failed to delete user')
-//     return await res.json();
-//   } catch (err: any) {
-//     return { error: err.message };
-//   }
-// }
+export async function deleteReceptor(id: number) {
+  try {
+    const res = await fetch(`/api/admin/receptors/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok)
+      throw new Error(`Failed to delete receptor: ${res.status} ${res.statusText}`);
+    return await res.json();
+  } catch (err: any) {
+    console.error(err.message)
+    return { error: err.message };
+  }
+}
 
-// // count number of users
-// export async function getUserCount() {
-//   return getUsers().then(users => {
-//     if (Array.isArray(users)) {
-//       return users.length;
-//     } else {
-//       console.error('Failed to count users');
-//       return 0;
-//     }
-//   });
-// }
+export async function getReceptorCount(): Promise<number | { error: string }> {
+  try {
+    const files = await getReceptors();
+    
+    if (Array.isArray(files)) {
+      return files.length;
+    } else {
+      throw new Error('Failed to count receptor files');
+    }
+  } catch (err: any) {
+    console.error(err.message);
+    return { error: err.message };
+  }
+}

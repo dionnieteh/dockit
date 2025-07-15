@@ -1,7 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Briefcase, Database } from "lucide-react"
 import { getUserCount } from "@/lib/users"
+
 import React, { useEffect, useState, useCallback } from "react"
+import { getReceptorCount } from "@/lib/receptors"
+import { useToast } from "@/hooks/use-toast"
+import { TOAST } from "@/lib/toast-messages"
 
 export function AdminStats() {
   const [totalUsers, setTotalUsers] = useState(0)
@@ -9,37 +13,42 @@ export function AdminStats() {
   const [totalReceptors, setTotalReceptors] = useState(0)
   const [loading, setLoading] = useState(true)
 
+  const { toast } = useToast()
+
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true)
 
-      // Fetch user count
       const userCount = await getUserCount()
-      setTotalUsers(userCount)
 
-      // TODO: Add these functions to your lib files
-      // const jobCount = await getJobCount()
-      // const receptorCount = await getReceptorCount()
-      // setTotalJobs(jobCount)
-      // setTotalReceptors(receptorCount)
+      if (typeof userCount === 'number') {
+        setTotalUsers(userCount)
+      } else {
+        setTotalUsers(0)
+        throw new Error(userCount.error)
+      }
 
-      // For now, set dummy values or fetch from your APIs
-      setTotalJobs(0) // Replace with actual API call
-      setTotalReceptors(0) // Replace with actual API call
+      const receptorCount = await getReceptorCount()
 
+      if (typeof receptorCount === 'number') {
+        setTotalReceptors(receptorCount)
+      } else {
+        setTotalReceptors(0)
+        throw new Error(receptorCount.error)
+      }
     } catch (error) {
       console.error("Failed to fetch stats:", error)
+      toast({
+        title: TOAST.STATS_ERROR.title,
+        description: TOAST.STATS_ERROR.description + (error ? error : "Unknown error"),
+        variant: TOAST.STATS_ERROR.variant,
+      })
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchStats()
-  }, [fetchStats])
-
-  // Method to refresh stats that can be called from parent
-  const refreshStats = useCallback(() => {
     fetchStats()
   }, [fetchStats])
 

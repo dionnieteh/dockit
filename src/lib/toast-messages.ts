@@ -41,5 +41,35 @@ export const TOAST = {
     description: "An error occured while creating the record: ",
     variant: ToastVariant.ERROR
   },
+  FILE_CREATE_SUCCESS: {
+    title: "File Added Successfully",
+    description: "New file has been added to the database.",
+    variant: ToastVariant.SUCCESS
+  },
+  FILE_CREATE_ERROR: {
+    title: "File Failed to Add",
+    description: "An error occured while adding the file: ",
+    variant: ToastVariant.ERROR
+  },
+  DEFAULT_SUCCESS: {
+    title: "Operation Successful",
+    description: "Operation completed successfully.",
+    variant: ToastVariant.SUCCESS
+  },
+  DEFAULT_ERROR: {
+    title: "Operation Failed",
+    description: "An error occurred while processing your request.",
+    variant: ToastVariant.ERROR
+  },
+  STATS_SUCCESS: {
+    title: "Statistics Retrieved Successfully",
+    description: "All statistics have been fetched.",
+    variant: ToastVariant.SUCCESS
+  },
+  STATS_ERROR: {
+    title: "Statistics Failed to Fetch",
+    description: "An error occurred while fetching statistics: ",
+    variant: ToastVariant.ERROR,
+  },
 
 } as const

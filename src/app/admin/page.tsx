@@ -1,46 +1,28 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { DashboardShell } from "@/components/dashboard-shell"
-import { DashboardNav } from "@/components/dashboard-nav"
 import { UserManagement } from "@/components/user-management"
 import { ReceptorManagement } from "@/components/receptor-management"
 import { ParameterConfiguration } from "@/components/parameter-configuration"
 import { AdminStats } from "@/components/admin-stats"
 
 export default function AdminDashboard() {
-  const [defaultParams, setDefaultParams] = useState<any | null>(null)
-
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalJobs: 0,
-    totalReceptors: 0,
-  })
-
   const [refreshKey, setRefreshKey] = useState(0)
 
   const handleUserCountChange = useCallback(() => {
-    // Force AdminStats to refresh by updating key
     setRefreshKey(prev => prev + 1)
   }, [])
 
-  useEffect(() => {
-    fetchStats()
+  const handleReceptorCountChange = useCallback(() => {
+    setRefreshKey(prev => prev + 1)
   }, [])
 
-  const fetchStats = async () => {
-    try {
-      const response = await fetch("/api/admin/stats")
-      if (response.ok) {
-        const data = await response.json()
-        setStats(data)
-      }
-    } catch (error) {
-      console.error("Error fetching stats:", error)
-    }
-  }
+  const handleJobCountChange = useCallback(() => {
+    setRefreshKey(prev => prev + 1)
+  }, [])
 
   return (
     <DashboardShell>
@@ -59,7 +41,7 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="receptors" className="space-y-4">
-          <ReceptorManagement />
+          <ReceptorManagement onFileCountChange={handleReceptorCountChange}/>
         </TabsContent>
 
         <TabsContent value="parameters" className="space-y-4">
