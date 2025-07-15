@@ -11,7 +11,7 @@ const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
 const ASSETS_DIR = path.join(process.cwd(), "src", "assets");
 
 export async function POST(req: Request) {
-  let jobId = "0"
+  var jobId = "0"
   try {
     const form = await req.formData();
     const parsedMetadata = parseJobMetadata(form);
@@ -20,9 +20,9 @@ export async function POST(req: Request) {
     if (!ligandFiles.length) {
       return NextResponse.json({ error: "No ligand files uploaded" }, { status: 400 });
     }
-
+    console.log(parsedMetadata)
     // Step 1: Create job entry in DB
-    const jobMetadata = await prisma.job.create(
+    const jobMetadata = await prisma.jobs.create(
       {
         data: {
           userId: parsedMetadata.userId,
@@ -43,6 +43,7 @@ export async function POST(req: Request) {
     )
 
     jobId = jobMetadata.id;
+    console.log(jobId)
     const jobDir = path.join(process.cwd(), "jobs", `job-${jobId}`);
     await saveUploadedFiles(ligandFiles, jobDir);
 
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
     await zipModel1Outputs(jobDir, zipPath);
 
     // Step 6: Update DB status
-    await prisma.job.update({
+    await prisma.jobs.update({
       where: { id: jobId },
       data: {
         status: "complete",
@@ -70,11 +71,11 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ ...jobMetadata, id: jobId });
   } catch (err) {
-    await prisma.job.update({
+    await prisma.jobs.update({
       where: { id: jobId },
       data: {
-      status: "error",
-      errorMessage: err instanceof Error ? err.message : String(err)
+        status: "error",
+        errorMessage: err instanceof Error ? err.message : String(err)
       },
     });
     return NextResponse.json({ error: "Docking job failed" + err });
@@ -142,7 +143,7 @@ async function getPreparedReceptorPath(filename: string): Promise<string> {
 }
 
 async function dockLigands(ligandPaths: string[], receptorPath: string, config: any, jobId: string) {
-  await prisma.job.update({
+  await prisma.jobs.update({
     where: { id: jobId },
     data: {
       status: "processing",
@@ -155,9 +156,9 @@ async function dockLigands(ligandPaths: string[], receptorPath: string, config: 
       "--receptor", receptorPath,
       "--ligand", pdbqt,
       "--out", outFile,
-      "--center_x", config.centerX.toString(),
-      "--center_y", config.centerY.toString(),
-      "--center_z", config.centerZ.toString(),
+      "--center_x", config.centerX,
+      "--center_y", config.centerY,
+      "--center_z", config.centerZ,
       "--size_x", config.gridSizeX.toString(),
       "--size_y", config.gridSizeY.toString(),
       "--size_z", config.gridSizeZ.toString(),

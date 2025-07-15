@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
   try {
-    const jobs = await prisma.job.findMany()
+    const jobs = await prisma.jobs.findMany()
     return NextResponse.json(jobs)
   } catch (err) {
     console.error('Failed to fetch jobs:', err)

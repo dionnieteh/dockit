@@ -16,7 +16,7 @@ model User {
   role        String
   institution String?
   purpose     String?
-  Job         Job[]
+  Job         Jobs[]
   Session     Session?
 }
 
@@ -30,7 +30,7 @@ model Session {
   user      User     @relation(fields: [userId], references: [id])
 }
 
-model Job {
+model Jobs {
   id             String    @id @default(cuid())
   userId         Int
   name           String

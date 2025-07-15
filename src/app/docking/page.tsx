@@ -27,9 +27,9 @@ export default function NewJobPage() {
   const [gridSizeX, setGridSizeX] = useState<number>(30)
   const [gridSizeY, setGridSizeY] = useState<number>(30)
   const [gridSizeZ, setGridSizeZ] = useState<number>(30)
-  const [centerX, setCenterX] = useState<string>("0");
-  const [centerY, setCenterY] = useState<string>("0");
-  const [centerZ, setCenterZ] = useState<string>("0");
+  const [centerX, setCenterX] = useState<number>(0);
+  const [centerY, setCenterY] = useState<number>(0);
+  const [centerZ, setCenterZ] = useState<number>(0);
   const [numModes, setNumModes] = useState<number>(10)
   const [energyRange, setEnergyRange] = useState<number>(4)
   const [verbosity, setVerbosity] = useState<number>(1)
@@ -270,11 +270,11 @@ export default function NewJobPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="center-x">Center X</Label>
-                    <Input id="center-x" type="number" step="0.0001" value={centerX} onChange={(e) => setCenterX(e.target.value)} />
+                    <Input id="center-x" type="number" step="0.0001" value={centerX} onChange={(e) => setCenterX(parseFloat(e.target.value))} />
                     <Label htmlFor="center-y">Center Y</Label>
-                    <Input id="center-y" type="number" step="0.0001" value={centerY} onChange={(e) => setCenterY(e.target.value)} />
+                    <Input id="center-y" type="number" step="0.0001" value={centerY} onChange={(e) => setCenterY(parseFloat(e.target.value))} />
                     <Label htmlFor="center-z">Center Z</Label>
-                    <Input id="center-z" type="number" step="0.0001" value={centerZ} onChange={(e) => setCenterZ(e.target.value)} />
+                    <Input id="center-z" type="number" step="0.0001" value={centerZ} onChange={(e) => setCenterZ(parseFloat(e.target.value))} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="num-modes">Number of Modes</Label>
