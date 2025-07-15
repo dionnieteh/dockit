@@ -31,20 +31,24 @@ model Session {
 }
 
 model Job {
-  id              String    @id @default(cuid())
-  userId          Int
-  name            String
-  gridSizeX       Int
-  gridSizeY       Int
-  gridSizeZ       Int
-  status          JobStatus @default(queued)
-  progress        Int       @default(0)
-  progressMessage String?
-  errorMessage    String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  completedAt     DateTime?
-  user            User      @relation(fields: [userId], references: [id])
+  id             String    @id @default(cuid())
+  userId         Int
+  name           String
+  gridSizeX      Int
+  gridSizeY      Int
+  gridSizeZ      Int
+  status         JobStatus @default(queued)
+  errorMessage   String?
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
+  centerX        String
+  centerY        String
+  centerZ        String
+  energyRange    String
+  exhaustiveness String
+  numModes       String
+  verbosity      String
+  user           User      @relation(fields: [userId], references: [id])
 }
 
 model ReceptorFile {

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -10,8 +9,8 @@ export async function POST(req: Request) {
       data: {
         name: body.name,
         description: body.description,
-        filePath: body.filePath, // Assuming filePath is provided in the request
-        fileSize: body.fileSize, // Assuming createdBy is provided in the request
+        filePath: body.filePath,
+        fileSize: body.fileSize,
         uploadedOn: new Date(),
       },
     });
@@ -29,10 +28,10 @@ export async function POST(req: Request) {
 
 export async function GET(req: NextRequest) {
   try {
-    const users = await prisma.receptorFile.findMany()
-    return NextResponse.json(users)
+    const files = await prisma.receptorFile.findMany()
+    return NextResponse.json(files)
   } catch (err) {
-    console.error('Failed to fetch users:', err)
-    return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 })
+    console.error('Failed to fetch files:', err)
+    return NextResponse.json({ error: 'Failed to fetch files' }, { status: 500 })
   }
 }
