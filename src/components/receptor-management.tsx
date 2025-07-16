@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -56,6 +56,7 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const { toast } = useToast()
 
@@ -266,6 +267,15 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
     }
   };
 
+  const filteredReceptors = useMemo(() => {
+    if (!searchTerm) return receptors;
+    const lowerSearch = searchTerm.toLowerCase();
+    return receptors.filter((r) =>
+      r.name.toLowerCase().includes(lowerSearch) ||
+      r.description?.toLowerCase().includes(lowerSearch)
+    );
+  }, [searchTerm, receptors]);
+
   if (loading) {
     return <div className="px-4">Loading receptors...</div>
   }
@@ -278,6 +288,15 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
             <CardTitle>Receptor File Management</CardTitle>
             <CardDescription>Manage receptor files for docking jobs</CardDescription>
           </div>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <Input
+            type="text"
+            placeholder="Search by name or description"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
               <Button>
@@ -337,7 +356,7 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
             </TableRow>
           </TableHeader>
           <TableBody>
-            {receptors.map((receptor) => (
+            {filteredReceptors.map((receptor) => (
               <TableRow key={receptor.id}>
                 <TableCell className="font-medium">{receptor.name}</TableCell>
                 <TableCell className="max-w-xs truncate">{receptor.description}</TableCell>

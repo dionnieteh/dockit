@@ -7,7 +7,7 @@ import { capitalize, formatDateTimeMY } from "@/lib/utils";
 import { getJobs } from "@/lib/jobs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input"
-import { JobStatus } from "@prisma/client";
+import { JobStatus } from "@/lib/job-status";
 
 interface Job {
   id: string;
@@ -36,7 +36,7 @@ export function JobConfiguration() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("All");
 
   useEffect(() => {
     fetchJobs();
@@ -78,12 +78,10 @@ export function JobConfiguration() {
   const filteredJobs = useMemo(() => {
     let currentJobs = jobs;
 
-    // Apply status filter
-    if (filterStatus !== "all") {
+    if (filterStatus !== "All") {
       currentJobs = currentJobs.filter((job) => job.status === filterStatus);
     }
 
-    // Apply search term filter
     if (searchTerm) {
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       currentJobs = currentJobs.filter(
@@ -100,7 +98,7 @@ export function JobConfiguration() {
   }, [jobs, searchTerm, filterStatus]);
 
   const jobStatuses = useMemo(() => {
-    return ["all", ...Object.values(JobStatus)];
+    return ["All", ...Object.values(JobStatus)];
   }, []);
 
   if (loading) {
@@ -126,7 +124,7 @@ export function JobConfiguration() {
             <SelectContent className="bg-white">
               {jobStatuses.map((status) => (
                 <SelectItem key={status} value={status}>
-                  {capitalize(status)}
+                  {status}
                 </SelectItem>
               ))}
             </SelectContent>

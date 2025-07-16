@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -32,9 +32,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { UserPlus, Edit, Trash2, Shield, User } from "lucide-react"
 import { getUsers, updateUser, addAdmin, deleteUser } from "@/lib/users"
-import { capitalize } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { TOAST } from "@/lib/toast-messages"
+import { UserRole } from "@/lib/user-role"
 
 interface User {
   id: number
@@ -56,6 +56,8 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filterRole, setFilterRole] = useState<string>("All");
 
   const { toast } = useToast()
 
@@ -132,7 +134,7 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
       password: formData.get("password") as string,
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
-      role: "Admin",
+      role: UserRole.ADMIN,
     }
 
     try {
@@ -174,6 +176,32 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
     }
   }
 
+  const filteredUsers = useMemo(() => {
+    let currentUsers = users;
+
+    if (filterRole !== "All") {
+      currentUsers = currentUsers.filter((user) => user.role === filterRole);
+    }
+
+    if (searchTerm) {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      currentUsers = currentUsers.filter(
+        (user) =>
+          user.firstName.toLowerCase().includes(lowerCaseSearchTerm) ||
+          user.lastName.toLowerCase().includes(lowerCaseSearchTerm) ||
+          user.email.toLowerCase().includes(lowerCaseSearchTerm) ||
+          user.institution.toLowerCase().includes(lowerCaseSearchTerm) ||
+          user.purpose.toLowerCase().includes(lowerCaseSearchTerm)
+      )
+    }
+
+    return currentUsers;
+  }, [users, searchTerm, filterRole]);
+
+  const userRoles = useMemo(() => {
+    return ["All", ...Object.values(UserRole)];
+  }, []);
+
   if (loading) {
     return <div className="px-4">Loading users...</div>
   }
@@ -186,6 +214,30 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
             <CardTitle>User Management</CardTitle>
             <CardDescription>Manage system users and administrators</CardDescription>
           </div>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Input
+              type="text"
+              placeholder="Search by name, email, institution or purpose"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-[500px]"
+            />
+            <Select value={filterRole} onValueChange={setFilterRole}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by role" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                {userRoles.map((roles) => (
+                  <SelectItem key={roles} value={roles}>
+                    {roles}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
               <Button>
@@ -228,62 +280,66 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Institution</TableHead>
-              <TableHead>Purpose</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{`${user.firstName} ${user.lastName}`}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  <Badge variant="destructive">
-                    {user.role.toLowerCase() === "admin" ?
-                      <Shield className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />
-                    }
-                    {capitalize(user.role)}</Badge>
-                </TableCell>
-                <TableCell>{user.institution}</TableCell>
-                <TableCell>{user.purpose}</TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
+        {filteredUsers.length === 0 && !loading ? (
+          <p className="text-center text-gray-500">No users found matching your criteria.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Institution</TableHead>
+                  <TableHead>Purpose</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>{`${user.firstName} ${user.lastName}`}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="destructive">
+                        {user.role === UserRole.ADMIN ?
+                          <Shield className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />
+                        }
+                        {user.role}</Badge>
+                    </TableCell>
+                    <TableCell>{user.institution}</TableCell>
+                    <TableCell>{user.purpose}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
+                          <Edit className="h-4 w-4" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete User</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this user? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this user? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>)}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
@@ -317,10 +373,10 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
 
                   <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    {editingUser.role.toLowerCase() === "admin" ? (
+                    {editingUser.role === UserRole.ADMIN ? (
                       <>
-                        <Input id="role" name="role" value="Admin" disabled />
-                        <input type="hidden" name="role" value="Admin" />
+                        <Input id="role" name="role" value={editingUser.role} disabled />
+                        <input type="hidden" name="role" value={editingUser.role} />
                       </>
                     ) : (
                       <Select name="role" defaultValue={editingUser.role}>
@@ -328,17 +384,17 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-white">
-                          <SelectItem value="researcher">Research Scientist</SelectItem>
-                          <SelectItem value="professor">Professor</SelectItem>
-                          <SelectItem value="postdoc">Postdoctoral Researcher</SelectItem>
-                          <SelectItem value="student">Graduate Student</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
+                          <SelectItem value={UserRole.RESEARCHER}>Research Scientist</SelectItem>
+                          <SelectItem value={UserRole.PROFESSOR}>Professor</SelectItem>
+                          <SelectItem value={UserRole.POSTDOC}>Postdoctoral Researcher</SelectItem>
+                          <SelectItem value={UserRole.STUDENT}>Student</SelectItem>
+                          <SelectItem value={UserRole.OTHER}>Other</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
                   </div>
                 </div>
-                {editingUser.role.toLowerCase() !== "admin" && (
+                {editingUser.role === UserRole.ADMIN && (
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="institution">Institution</Label>
@@ -360,7 +416,7 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
                     </div>
                   </>
                 )}
-                <DialogFooter className="mt-6">
+                < DialogFooter className="mt-6">
                   <Button type="submit">Update User</Button>
                 </DialogFooter>
               </form>
@@ -368,6 +424,6 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
           </DialogContent>
         </Dialog>
       </CardContent>
-    </Card>
+    </Card >
   )
 }

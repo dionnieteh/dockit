@@ -37,7 +37,7 @@ model Jobs {
   gridSizeX      Int
   gridSizeY      Int
   gridSizeZ      Int
-  status         JobStatus @default(queued)
+  status         JobStatus @default(Queued)
   errorMessage   String?
   createdAt      DateTime  @default(now())
   completedAt    DateTime?
@@ -77,8 +77,8 @@ model DefaultParameters {
 }
 
 enum JobStatus {
-  queued
-  processing
-  complete
-  error
+  Queued
+  Processing
+  Complete
+  Error
 }

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { UserRole } from "@/lib/user-role"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -89,11 +90,11 @@ export default function SignupPage() {
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent className="z-50 bg-white">
-                    <SelectItem value="researcher">Research Scientist</SelectItem>
-                    <SelectItem value="professor">Professor</SelectItem>
-                    <SelectItem value="postdoc">Postdoctoral Researcher</SelectItem>
-                    <SelectItem value="student">Graduate Student</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value={UserRole.RESEARCHER}>Research Scientist</SelectItem>
+                    <SelectItem value={UserRole.PROFESSOR}>Professor</SelectItem>
+                    <SelectItem value={UserRole.POSTDOC}>Postdoctoral Researcher</SelectItem>
+                    <SelectItem value={UserRole.STUDENT}>Student</SelectItem>
+                    <SelectItem value={UserRole.OTHER}>Other</SelectItem>
                   </SelectContent>
                 </Select>
                 <input type="hidden" name="role" value={role} />

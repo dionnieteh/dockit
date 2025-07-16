@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcrypt'
+import { capitalize } from '@/lib/utils'
 
 export async function GET(req: NextRequest) {
   try {
@@ -43,13 +44,13 @@ export async function POST(req: Request) {
     // Create the user using Prisma
     const admin = await prisma.user.create({
       data: {
-        firstName: firstName,
-        lastName: lastName,
+        firstName: capitalize(firstName),
+        lastName: capitalize(lastName),
         email: email,
         password: hashedPassword,
         role: role,
-        institution: "",
-        purpose: "",
+        institution: "DockIt Organization",
+        purpose: "Admin access and platform maintenance",
       },
     });
 

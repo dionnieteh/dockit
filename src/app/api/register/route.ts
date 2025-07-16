@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { serialize } from 'cookie';
 import jwt from 'jsonwebtoken';
+import { capitalize } from '@/lib/utils';
 
 export async function POST(req: Request) {
   try {
@@ -28,12 +29,12 @@ export async function POST(req: Request) {
     // Create the user using Prisma
     const user = await prisma.user.create({
       data: {
-        firstName,
-        lastName,
+        firstName: capitalize(firstName),
+        lastName: capitalize(lastName),
         email,
         password: hashedPassword,
         role,
-        institution,
+        institution: capitalize(institution),
         purpose,
       },
     });

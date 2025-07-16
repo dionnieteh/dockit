@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { capitalize } from "@/lib/utils";
 
 // PUT: Update user details
 export async function PUT(req: NextRequest) {
@@ -16,10 +17,10 @@ export async function PUT(req: NextRequest) {
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
-        firstName: body.firstName,
-        lastName: body.lastName,
+        firstName: capitalize(body.firstName),
+        lastName: capitalize(body.lastName),
         role: body.role,
-        institution: body.institution || "",
+        institution: capitalize(body.institution) || "",
         purpose: body.purpose || "",
       },
     });
