@@ -21,7 +21,6 @@ export async function getJobs() {
       throw new Error(`Failed to load jobs: ${res.status} ${res.statusText}`);
     const jobs = await res.json();
     return jobs.map((job: any) => ({
-      userId: job.userId,
       name: job.name,
       status: job.status,
       gridSizeX: job.gridSizeX,
@@ -36,6 +35,8 @@ export async function getJobs() {
       verbosity: job.verbosity,
       createdAt: job.createdAt,
       completedAt: job.completedAt,
+      errorMessage: job.errorMessage,
+      user: job.user
     }));
   } catch (err: any) {
     console.error(err.message)

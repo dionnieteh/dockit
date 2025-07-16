@@ -76,12 +76,6 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
         purpose: user.purpose,
       }))
       setUsers(transformed)
-      // TODO: check if in use, for checking
-      // toast({
-      //   title: "User " + TOAST.GET_SUCCESS.title,
-      //   description: TOAST.GET_SUCCESS.description,
-      //   variant: TOAST.GET_SUCCESS.variant,
-      // })
     } catch (err) {
       toast({
         title: "User " + TOAST.GET_ERROR.title,
