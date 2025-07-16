@@ -6,6 +6,7 @@ import { spawn } from "child_process";
 import { prisma } from "@/lib/prisma";
 import archiver from "archiver";
 import fsSync from "fs";
+import { JobStatus } from "@prisma/client";
 
 const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
 const ASSETS_DIR = path.join(process.cwd(), "src", "assets");
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
           gridSizeX: parsedMetadata.gridSizeX,
           gridSizeY: parsedMetadata.gridSizeY,
           gridSizeZ: parsedMetadata.gridSizeZ,
-          status: "queued",
+          status: JobStatus.queued,
           centerX: parsedMetadata.centerX,
           centerY: parsedMetadata.centerY,
           centerZ: parsedMetadata.centerZ,
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
     await prisma.jobs.update({
       where: { id: jobId },
       data: {
-        status: "complete",
+        status: JobStatus.complete,
         completedAt: new Date()
       },
     });
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
     await prisma.jobs.update({
       where: { id: jobId },
       data: {
-        status: "error",
+        status: JobStatus.error,
         errorMessage: err instanceof Error ? err.message : String(err)
       },
     });
@@ -147,7 +148,7 @@ async function dockLigands(ligandPaths: string[], receptorPath: string, config: 
   await prisma.jobs.update({
     where: { id: jobId },
     data: {
-      status: "processing",
+      status: JobStatus.processing,
     },
   });
   for (const pdbqt of ligandPaths.map((p) => p.replace(/\.pdb$/, ".pdbqt"))) {

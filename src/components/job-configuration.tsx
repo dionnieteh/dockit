@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { capitalize, formatDateTimeMY } from "@/lib/utils";
 import { getJobs } from "@/lib/jobs";
-import { User } from "@prisma/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input"
+import { JobStatus } from "@prisma/client";
 
 interface Job {
-  id: number;
+  id: string;
   name: string;
   gridSizeX: number;
   gridSizeY: number;
@@ -24,12 +26,17 @@ interface Job {
   errorMessage?: string;
   createdAt: string,
   completedAt?: string;
-  user: User;
+  user: {
+    firstName: string;
+    email: string;
+  };
 }
 
 export function JobConfiguration() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
     fetchJobs();
@@ -39,6 +46,7 @@ export function JobConfiguration() {
     try {
       const params = await getJobs();
       const transformed: Job[] = params.map((job: any) => ({
+        id: job.id,
         name: job.name,
         gridSizeX: job.gridSizeX,
         gridSizeY: job.gridSizeY,
@@ -54,7 +62,10 @@ export function JobConfiguration() {
         errorMessage: job.errorMessage,
         createdAt: job.createdAt,
         completedAt: job.completedAt,
-        user: job.user
+        user: {
+          firstName: job.user.firstName,
+          email: job.user.email,
+        },
       }));
       setJobs(transformed);
     } catch (err) {
@@ -63,6 +74,34 @@ export function JobConfiguration() {
       setLoading(false);
     }
   };
+
+  const filteredJobs = useMemo(() => {
+    let currentJobs = jobs;
+
+    // Apply status filter
+    if (filterStatus !== "all") {
+      currentJobs = currentJobs.filter((job) => job.status === filterStatus);
+    }
+
+    // Apply search term filter
+    if (searchTerm) {
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      currentJobs = currentJobs.filter(
+        (job) =>
+          job.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+          job.status.toLowerCase().includes(lowerCaseSearchTerm) ||
+          (job.errorMessage && job.errorMessage.toLowerCase().includes(lowerCaseSearchTerm)) ||
+          job.user.firstName.toLowerCase().includes(lowerCaseSearchTerm) ||
+          job.user.email.toLowerCase().includes(lowerCaseSearchTerm)
+      );
+    }
+
+    return currentJobs;
+  }, [jobs, searchTerm, filterStatus]);
+
+  const jobStatuses = useMemo(() => {
+    return ["all", ...Object.values(JobStatus)];
+  }, []);
 
   if (loading) {
     return <div className="px-4">Loading jobs...</div>;
@@ -73,52 +112,78 @@ export function JobConfiguration() {
       <CardHeader>
         <CardTitle>Job Configuration</CardTitle>
         <CardDescription>Displaying all molecular docking jobs.</CardDescription>
+        <div className="flex flex-col md:flex-row gap-4 mt-4 w-full justify-between">
+          <Input
+            placeholder="Search by job name, status, error, user first name or email"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status"/>
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              {jobStatuses.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {capitalize(status)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Job Name</TableHead>
-              <TableHead>Grid Size X</TableHead>
-              <TableHead>Grid Size Y</TableHead>
-              <TableHead>Grid Size Z</TableHead>
-              <TableHead>Center X</TableHead>
-              <TableHead>Center Y</TableHead>
-              <TableHead>Center Z</TableHead>
-              <TableHead>Energy Range</TableHead>
-              <TableHead>Exhaustiveness</TableHead>
-              <TableHead>Number Modes</TableHead>
-              <TableHead>Verbosity</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Error</TableHead>
-              <TableHead>Created At</TableHead>
-              <TableHead>Completed At</TableHead>
-              <TableHead>User</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {jobs.map((job) => (
-              <TableRow key={job.id}>
-                <TableCell>{capitalize(job.name)}</TableCell>
-                <TableCell>{job.gridSizeX}</TableCell>
-                <TableCell>{job.gridSizeY}</TableCell>
-                <TableCell>{job.gridSizeZ}</TableCell>
-                <TableCell>{job.centerX}</TableCell>
-                <TableCell>{job.centerY}</TableCell>
-                <TableCell>{job.centerZ}</TableCell>
-                <TableCell>{job.energyRange}</TableCell>
-                <TableCell>{job.exhaustiveness}</TableCell>
-                <TableCell>{job.numModes}</TableCell>
-                <TableCell>{job.verbosity}</TableCell>
-                <TableCell>{job.status}</TableCell>
-                <TableCell>{job.errorMessage}</TableCell>
-                <TableCell>{formatDateTimeMY(new Date(job.createdAt))}</TableCell>
-                <TableCell>{job.completedAt ? formatDateTimeMY(new Date(job.completedAt)) : ""}</TableCell>
-                <TableCell>{`${capitalize(job.user.firstName)}: ${job.user.email}`}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {filteredJobs.length === 0 && !loading ? (
+          <p className="text-center text-gray-500">No jobs found matching your criteria.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Job Name</TableHead>
+                  <TableHead>Grid Size X</TableHead>
+                  <TableHead>Grid Size Y</TableHead>
+                  <TableHead>Grid Size Z</TableHead>
+                  <TableHead>Center X</TableHead>
+                  <TableHead>Center Y</TableHead>
+                  <TableHead>Center Z</TableHead>
+                  <TableHead>Energy Range</TableHead>
+                  <TableHead>Exhaustiveness</TableHead>
+                  <TableHead>Number Modes</TableHead>
+                  <TableHead>Verbosity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Error</TableHead>
+                  <TableHead>Created At</TableHead>
+                  <TableHead>Completed At</TableHead>
+                  <TableHead>User</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredJobs.map((job) => (
+                  <TableRow key={job.id}>
+                    <TableCell>{capitalize(job.name)}</TableCell>
+                    <TableCell>{job.gridSizeX}</TableCell>
+                    <TableCell>{job.gridSizeY}</TableCell>
+                    <TableCell>{job.gridSizeZ}</TableCell>
+                    <TableCell>{job.centerX}</TableCell>
+                    <TableCell>{job.centerY}</TableCell>
+                    <TableCell>{job.centerZ}</TableCell>
+                    <TableCell>{job.energyRange}</TableCell>
+                    <TableCell>{job.exhaustiveness}</TableCell>
+                    <TableCell>{job.numModes}</TableCell>
+                    <TableCell>{job.verbosity}</TableCell>
+                    <TableCell>{capitalize(job.status)}</TableCell>
+                    <TableCell>{job.errorMessage}</TableCell>
+                    <TableCell>{formatDateTimeMY(new Date(job.createdAt))}</TableCell>
+                    <TableCell>{job.completedAt ? formatDateTimeMY(new Date(job.completedAt)) : ""}</TableCell>
+                    <TableCell>{`${capitalize(job.user.firstName)}: ${job.user.email}`}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
