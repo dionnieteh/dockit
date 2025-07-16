@@ -34,7 +34,11 @@ interface Job {
   };
 }
 
-export function JobConfiguration() {
+interface JobManagementProps {
+  onJobCountChange?: () => void
+}
+
+export function JobConfiguration({ onJobCountChange }: JobManagementProps) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -106,8 +110,8 @@ export function JobConfiguration() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Job Configuration</CardTitle>
-        <CardDescription>Displaying all molecular docking jobs.</CardDescription>
+        <CardTitle>Docking Jobs</CardTitle>
+        <CardDescription>Displaying all molecular docking jobs</CardDescription>
         <div className="flex flex-col md:flex-row gap-4 mt-4 w-full justify-between">
           <Input
             placeholder="Search by job name, status, error, user first name or email"
@@ -132,6 +136,7 @@ export function JobConfiguration() {
             onClick={() => {
               setLoading(true)
               fetchJobs()
+              onJobCountChange?.()
             }}
             disabled={loading}
           >

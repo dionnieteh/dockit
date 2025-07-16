@@ -109,7 +109,7 @@ export function ParameterConfiguration() {
     <Card>
       <CardHeader>
         <CardTitle>Default Parameter Configuration</CardTitle>
-        <CardDescription>Configure default values for molecular docking parameters.</CardDescription>
+        <CardDescription>Configure default values for molecular docking parameters</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ?
