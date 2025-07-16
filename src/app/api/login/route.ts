@@ -57,7 +57,6 @@ export async function POST(req: Request) {
       },
     })
 
-    // Set JWT token as cookie
     const cookie = serialize('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

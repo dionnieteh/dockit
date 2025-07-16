@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useUser } from "@/lib/user-context"
+import { UserRole } from "@/lib/user-role"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,7 +19,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const { setUser } = useUser()
-
 
   const searchParams = useSearchParams()
 
@@ -33,7 +33,6 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
 
-
     try {
       const response = await fetch("/api/login", {
         method: "POST",
@@ -46,13 +45,10 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (data.success) {
-        // Store JWT token in cookies
         document.cookie = `token=${data.token}; path=/; HttpOnly; Max-Age=${60 * 60 * 24 * 7}` // Set a 7-day expiration
-    const userData = await fetch("/api/me", { credentials: "include" }).then(res => res.json())
-
-        setUser(userData) // ✅ Update context immediately
-        // Redirect to /docking or dashboard
-        router.push("/docking")
+        const userData = await fetch("/api/me", { credentials: "include" }).then(res => res.json())
+        setUser(userData)
+        userData.role === UserRole.ADMIN ? router.push("/admin") : router.push("/docking")
       } else {
         setError(data.error || "Invalid credentials")
       }
@@ -62,7 +58,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false)
     }
-
   }
 
   return (

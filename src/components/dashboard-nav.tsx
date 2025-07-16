@@ -4,21 +4,22 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { FileText, LogOut } from "lucide-react"
+import { Atom, FileText, LogOut, UserRoundCog } from "lucide-react"
 import { useUser } from "@/lib/user-context"
+import { UserRole } from "@/lib/user-role"
 
 export function DashboardNav() {
   const { user, isLoading, logout } = useUser()
   const pathname = usePathname()
   const router = useRouter()
 
-  if (isLoading) return null
+  if (isLoading || !user) return null
 
-  const isAdmin = user?.role.toLowerCase() === "admin"
+  const isAdmin = user?.role === UserRole.ADMIN
 
   const userNavItems = [
     {
-      title: "Results",
+      title: "Docking History",
       href: "/results",
       icon: FileText,
     },
@@ -26,20 +27,25 @@ export function DashboardNav() {
 
   const adminNavItems = [
     {
-      title: "placeholder",
-      href: "/results",
-      icon: FileText,
+      title: "Start Docking",
+      href: "/docking",
+      icon: Atom,
     },
+    {
+      title: "Admin Dashboard",
+      href: "/admin",
+      icon: UserRoundCog,
+    }
   ]
 
-  console.log("User role:", user?.role) // Debugging line
+  console.log("User role:", user?.role)
 
   const navItems =
     isAdmin ? adminNavItems : userNavItems
 
   const handleLogout = async () => {
     try {
-      await logout() // handles API + clears user context
+      await logout()
       router.push("/login")
       router.refresh()
     } catch (error) {

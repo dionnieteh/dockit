@@ -42,11 +42,11 @@ export default function SignupPage() {
 
       const data = await res.json()
       if (data.success) {
-        router.push("/docking")
+        alert("Your account has been made. Please proceed to login.")
       } else {
-        router.push("/login")
         alert(data.error)
       }
+      router.push("/login")
     } catch (err) {
       console.error(err)
       alert("Error submitting form")
@@ -99,8 +99,6 @@ export default function SignupPage() {
                 </Select>
                 <input type="hidden" name="role" value={role} />
               </div>
-
-              <input type="hidden" name="role" value={role} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="institution">Institution/Organization</Label>

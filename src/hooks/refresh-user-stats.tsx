@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getUserCount } from '@/lib/users'
 
-// Simple event emitter for user stats updates
 class UserStatsEmitter {
   private listeners: (() => void)[] = []
 

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import ToastWrapper from '@/components/toast-wrapper'
-import { UserProvider } from '@/lib/user-context' // 👈 import the context provider
+import { UserProvider } from '@/lib/user-context'
 
 export const metadata: Metadata = {
   title: 'DockIt: Accelerating Dengue Cure Research with Automated Molecular Docking',
