@@ -202,42 +202,31 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
     return ["All", ...Object.values(UserRole)];
   }, []);
 
-  if (loading) {
-    return <div className="px-4">Loading users...</div>
-  }
-
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>Manage system users and administrators</CardDescription>
-          </div>
-        </div>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Input
-              type="text"
-              placeholder="Search by name, email, institution or purpose"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-[500px]"
-            />
-            <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by role" />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                {userRoles.map((roles) => (
-                  <SelectItem key={roles} value={roles}>
-                    {roles}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+        <CardTitle>User Management</CardTitle>
+        <CardDescription>Manage system users and administrators</CardDescription>
+        <div className="flex flex-col md:flex-row gap-4 mt-4 w-full justify-between">
+          <Input
+            type="text"
+            placeholder="Search by name, email, institution or purpose"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+          <Select value={filterRole} onValueChange={setFilterRole}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by role" />
+            </SelectTrigger>
+            <SelectContent className="bg-white">
+              {userRoles.map((roles) => (
+                <SelectItem key={roles} value={roles}>
+                  {roles}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
               <Button>
@@ -280,66 +269,69 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {filteredUsers.length === 0 && !loading ? (
-          <p className="text-center text-gray-500">No users found matching your criteria.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Institution</TableHead>
-                  <TableHead>Purpose</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{`${user.firstName} ${user.lastName}`}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="destructive">
-                        {user.role === UserRole.ADMIN ?
-                          <Shield className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />
-                        }
-                        {user.role}</Badge>
-                    </TableCell>
-                    <TableCell>{user.institution}</TableCell>
-                    <TableCell>{user.purpose}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete User</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this user? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+        {loading ? (
+          <div className="px-4">Loading users...</div>
+        ) :
+          filteredUsers.length === 0 && !loading ? (
+            <p className="text-center text-gray-500">No users found matching your criteria.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="font-bold">Name</TableHead>
+                    <TableHead className="font-bold">Email</TableHead>
+                    <TableHead className="font-bold">Role</TableHead>
+                    <TableHead className="font-bold">Institution</TableHead>
+                    <TableHead className="font-bold">Purpose</TableHead>
+                    <TableHead className="font-bold">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>)}
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>{`${user.firstName} ${user.lastName}`}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="destructive">
+                          {user.role === UserRole.ADMIN ?
+                            <Shield className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />
+                          }
+                          {user.role}</Badge>
+                      </TableCell>
+                      <TableCell>{user.institution}</TableCell>
+                      <TableCell>{user.purpose}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => handleEditUser(user)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this user? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>)}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>

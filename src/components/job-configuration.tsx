@@ -8,6 +8,8 @@ import { getJobs } from "@/lib/jobs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input"
 import { JobStatus } from "@/lib/job-status";
+import { Button } from "./ui/button";
+import { RotateCcw } from "lucide-react";
 
 interface Job {
   id: string;
@@ -101,10 +103,6 @@ export function JobConfiguration() {
     return ["All", ...Object.values(JobStatus)];
   }, []);
 
-  if (loading) {
-    return <div className="px-4">Loading jobs...</div>;
-  }
-
   return (
     <Card>
       <CardHeader>
@@ -119,7 +117,7 @@ export function JobConfiguration() {
           />
           <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status"/>
+              <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent className="bg-white">
               {jobStatuses.map((status) => (
@@ -129,32 +127,45 @@ export function JobConfiguration() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setLoading(true)
+              fetchJobs()
+            }}
+            disabled={loading}
+          >
+            <RotateCcw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            {loading ? "Refreshing..." : "Refresh"}
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
-        {filteredJobs.length === 0 && !loading ? (
+        {loading ? (
+          <div className="px-4">Loading jobs...</div>
+        ) : filteredJobs.length === 0 ? (
           <p className="text-center text-gray-500">No jobs found matching your criteria.</p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Job Name</TableHead>
-                  <TableHead>Grid Size X</TableHead>
-                  <TableHead>Grid Size Y</TableHead>
-                  <TableHead>Grid Size Z</TableHead>
-                  <TableHead>Center X</TableHead>
-                  <TableHead>Center Y</TableHead>
-                  <TableHead>Center Z</TableHead>
-                  <TableHead>Energy Range</TableHead>
-                  <TableHead>Exhaustiveness</TableHead>
-                  <TableHead>Number Modes</TableHead>
-                  <TableHead>Verbosity</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Error</TableHead>
-                  <TableHead>Created At</TableHead>
-                  <TableHead>Completed At</TableHead>
-                  <TableHead>User</TableHead>
+                  <TableHead className="font-bold">Job Name</TableHead>
+                  <TableHead className="font-bold">Grid Size X</TableHead>
+                  <TableHead className="font-bold">Grid Size Y</TableHead>
+                  <TableHead className="font-bold">Grid Size Z</TableHead>
+                  <TableHead className="font-bold">Center X</TableHead>
+                  <TableHead className="font-bold">Center Y</TableHead>
+                  <TableHead className="font-bold">Center Z</TableHead>
+                  <TableHead className="font-bold">Energy Range</TableHead>
+                  <TableHead className="font-bold">Exhaustiveness</TableHead>
+                  <TableHead className="font-bold">Number Modes</TableHead>
+                  <TableHead className="font-bold">Verbosity</TableHead>
+                  <TableHead className="font-bold">Status</TableHead>
+                  <TableHead className="font-bold">Error</TableHead>
+                  <TableHead className="font-bold">Created At</TableHead>
+                  <TableHead className="font-bold">Completed At</TableHead>
+                  <TableHead className="font-bold">User</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

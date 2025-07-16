@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getDefaultParameters, updateDefaultParameter} from "@/lib/param";
+import { getDefaultParameters, updateDefaultParameter } from "@/lib/param";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,25 +32,25 @@ export function ParameterConfiguration() {
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
-  fetchParams();
-}, []);
+    fetchParams();
+  }, []);
 
-const fetchParams = async () => {
-  try {
-    const params = await getDefaultParameters();
-    const transformed: Parameter[] = Object.entries(params).map(([key, value], index) => ({
-      id: index,
-      parameterName: key,
-      parameterValue: String(value),
-      updatedBy: "system",
-    }));
-    setParameters(transformed);
-  } catch (err) {
-    console.error("Failed to fetch default docking parameters", err);
-  } finally {
-    setLoading(false);
-  }
-};
+  const fetchParams = async () => {
+    try {
+      const params = await getDefaultParameters();
+      const transformed: Parameter[] = Object.entries(params).map(([key, value], index) => ({
+        id: index,
+        parameterName: key,
+        parameterValue: String(value),
+        updatedBy: "system",
+      }));
+      setParameters(transformed);
+    } catch (err) {
+      console.error("Failed to fetch default docking parameters", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEditParameter = (parameter: Parameter) => {
     setEditingParameter(parameter);
@@ -79,11 +79,11 @@ const fetchParams = async () => {
     setShowEditDialog(false);
 
     const res = await updateDefaultParameter(editingParameter.parameterName, updatedValue);
-    
+
     if (res.error)
       console.error("Failed to update parameter in DB", res.error);
     else
-      
+
       await fetchParams(); // Refetch to ensure we have the latest data
   };
 
@@ -105,10 +105,6 @@ const fetchParams = async () => {
     return displayNames[name] || name;
   };
 
-  if (loading) {
-    return <div className="px-4">Loading default parameters...</div>;
-  }
-
   return (
     <Card>
       <CardHeader>
@@ -116,38 +112,39 @@ const fetchParams = async () => {
         <CardDescription>Configure default values for molecular docking parameters.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Parameter</TableHead>
-              <TableHead>Current Value</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {parameters
-              .filter((param) => param.parameterName !== "id" && param.parameterName !== "updatedBy")
-              .map((param) => (
-              <TableRow key={param.id}>
-                <TableCell className="font-medium">{getParameterDisplayName(param.parameterName)}</TableCell>
-                <TableCell>
-                {param.parameterName === "updatedAt"
-                  ? formatDateTimeMY(new Date(param.parameterValue))
-                  : param.parameterValue}
-                </TableCell>
-                <TableCell>
-                {param.parameterName !== "updatedAt" && (
-                  <Button variant="outline" size="sm" onClick={() => handleEditParameter(param)}>
-                  <Edit className="h-4 w-4" />
-                  </Button>
-                )}
-                </TableCell>
-              </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-
-        {/* Edit Dialog */}
+        {loading ?
+          <div className="px-4">Loading parameters...</div> : (
+            <Table>
+                <TableHeader>
+                <TableRow>
+                  <TableHead className="font-bold">Parameter</TableHead>
+                  <TableHead className="font-bold">Current Value</TableHead>
+                  <TableHead className="font-bold">Actions</TableHead>
+                </TableRow>
+                </TableHeader>
+              <TableBody>
+                {parameters
+                  .filter((param) => param.parameterName !== "id" && param.parameterName !== "updatedBy")
+                  .map((param) => (
+                    <TableRow key={param.id}>
+                      <TableCell className="font-medium">{getParameterDisplayName(param.parameterName)}</TableCell>
+                      <TableCell>
+                        {param.parameterName === "updatedAt"
+                          ? formatDateTimeMY(new Date(param.parameterValue))
+                          : param.parameterValue}
+                      </TableCell>
+                      <TableCell>
+                        {param.parameterName !== "updatedAt" && (
+                          <Button variant="outline" size="sm" onClick={() => handleEditParameter(param)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          )}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
@@ -157,7 +154,6 @@ const fetchParams = async () => {
                 {editingParameter && getParameterDisplayName(editingParameter.parameterName)}.
               </DialogDescription>
             </DialogHeader>
-
             {editingParameter && (
               <form onSubmit={handleUpdateParameter}>
                 <div className="space-y-4">

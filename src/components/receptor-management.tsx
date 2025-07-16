@@ -276,26 +276,18 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
     );
   }, [searchTerm, receptors]);
 
-  if (loading) {
-    return <div className="px-4">Loading receptors...</div>
-  }
-
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Receptor File Management</CardTitle>
-            <CardDescription>Manage receptor files for docking jobs</CardDescription>
-          </div>
-        </div>
-        <div className="flex items-center justify-between gap-4">
+        <CardTitle>Receptor File Management</CardTitle>
+        <CardDescription>Manage receptor files for docking jobs</CardDescription>
+        <div className="flex flex-col md:flex-row gap-4 mt-4 w-full justify-between">
           <Input
             type="text"
             placeholder="Search by name or description"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
+            className="w-full"
           />
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
@@ -345,55 +337,59 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>File Size</TableHead>
-              <TableHead>Uploaded On</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredReceptors.map((receptor) => (
-              <TableRow key={receptor.id}>
-                <TableCell className="font-medium">{receptor.name}</TableCell>
-                <TableCell className="max-w-xs truncate">{receptor.description}</TableCell>
-                <TableCell>{formatFileSize(receptor.fileSize)}</TableCell>
-                <TableCell>{formatDateTimeMY(new Date(receptor.uploadedOn))}</TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditReceptor(receptor)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4" />
+        {loading ?
+          <div className="px-4">Loading receptors...</div> : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-bold">Name</TableHead>
+                  <TableHead className="font-bold">Description</TableHead>
+                  <TableHead className="font-bold">File Size</TableHead>
+                  <TableHead className="font-bold">Uploaded On</TableHead>
+                  <TableHead className="font-bold">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredReceptors.map((receptor) => (
+                  <TableRow key={receptor.id}>
+                    <TableCell className="font-medium">{receptor.name}</TableCell>
+                    <TableCell className="max-w-xs truncate">{receptor.description}</TableCell>
+                    <TableCell>{formatFileSize(receptor.fileSize)}</TableCell>
+                    <TableCell>{formatDateTimeMY(new Date(receptor.uploadedOn))}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEditReceptor(receptor)}>
+                          <Edit className="h-4 w-4" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Receptor</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this receptor file? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDeleteReceptor(receptor.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Receptor</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this receptor file? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteReceptor(receptor.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )
+        }
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
