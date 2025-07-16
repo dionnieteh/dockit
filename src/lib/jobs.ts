@@ -45,7 +45,7 @@ export async function getJobs() {
   }
 }
 
-export async function getJobCount() {
+export async function getJobCount(): Promise<number | { error: string }> {
   try {
     const jobs = await getJobs();
 
@@ -59,4 +59,3 @@ export async function getJobCount() {
     return { error: err.message };
   }
 }
-

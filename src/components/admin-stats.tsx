@@ -39,7 +39,13 @@ export function AdminStats() {
       }
 
       const jobCount = await getJobCount()
-      
+
+      if (typeof jobCount === 'number') {
+        setTotalJobs  (jobCount)
+      } else {
+        setTotalJobs(0)
+        throw new Error(jobCount.error)
+      }
 
     } catch (error) {
       console.error("Failed to fetch stats:", error)

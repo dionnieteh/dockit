@@ -106,7 +106,7 @@ const fetchParams = async () => {
   };
 
   if (loading) {
-    return <div>Loading default parameters...</div>;
+    return <div className="px-4">Loading default parameters...</div>;
   }
 
   return (
