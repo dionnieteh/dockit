@@ -41,9 +41,9 @@ model Jobs {
   errorMessage   String?
   createdAt      DateTime  @default(now())
   completedAt    DateTime?
-  centerX        String
-  centerY        String
-  centerZ        String
+  centerX        Float
+  centerY        Float
+  centerZ        Float
   energyRange    Int
   exhaustiveness Int
   numModes       Int
