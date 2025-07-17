@@ -27,6 +27,12 @@ RUN npm install
 # Copy all application source code for building (this includes src/scripts)
 COPY . .
 
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
 # Generate Prisma client and build Next.js app
 RUN npx prisma generate
 RUN npm run build
