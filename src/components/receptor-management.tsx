@@ -30,12 +30,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Upload, Trash2, Edit } from "lucide-react"
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase-client'
 import { addReceptor, deleteReceptor, getReceptors, updateReceptor } from "@/lib/receptors" // Adjust the import path as needed
 import { formatDateTimeMY } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { TOAST } from "@/lib/toast-messages"
-import { Description } from "@radix-ui/react-toast"
 
 interface ReceptorFile {
   id: number

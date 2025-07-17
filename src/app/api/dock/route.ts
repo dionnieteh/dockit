@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import archiver from "archiver";
 import fsSync from "fs";
 import { JobStatus } from "@/lib/job-status";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-server";
 
 const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
 

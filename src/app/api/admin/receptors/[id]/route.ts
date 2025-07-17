@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(req: Request) {
