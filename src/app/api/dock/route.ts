@@ -7,9 +7,9 @@ import { prisma } from "@/lib/prisma";
 import archiver from "archiver";
 import fsSync from "fs";
 import { JobStatus } from "@/lib/job-status";
+import { supabase } from "@/lib/supabase";
 
 const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
-const ASSETS_DIR = path.join(process.cwd(), "src", "assets");
 
 export async function POST(req: Request) {
   var jobId = "0"
@@ -54,10 +54,12 @@ export async function POST(req: Request) {
     await convertLigandsToPdbqt(ligandPaths);
 
     // Step 3: Prepare receptor
-    const receptorPath = await getPreparedReceptorPath("3c5x.pdb");
+    const receptorPaths = await getReceptorFromSupabase();
 
     // Step 4: Docking
-    await dockLigands(ligandPaths, receptorPath, parsedMetadata, jobId);
+    for (const receptor of receptorPaths) {
+      await dockLigands(ligandPaths, receptor, parsedMetadata, jobId);
+    }
 
     // Step 5: Zip outputs
     const zipPath = path.join(jobDir, "results.zip");
@@ -71,6 +73,13 @@ export async function POST(req: Request) {
         completedAt: new Date()
       },
     });
+
+    try {
+      const receptorTmpDir = path.join(process.cwd(), "receptors");
+      await fs.rm(receptorTmpDir, { recursive: true, force: true });
+    } catch (cleanupErr) {
+      console.warn("Failed to clean up receptor tmp dir:", cleanupErr);
+    }
     return NextResponse.json({ ...jobMetadata, id: jobId });
   } catch (err) {
     await prisma.jobs.update({
@@ -117,15 +126,15 @@ async function convertLigandsToPdbqt(ligandPaths: string[]) {
   }
 }
 
-async function getPreparedReceptorPath(filename: string): Promise<string> {
+async function getPreparedReceptorPath(filename: string, rawPath: string): Promise<string> {
   const ext = path.extname(filename).toLowerCase();
-  const rawPath = path.join(ASSETS_DIR, filename);
 
   if (ext !== ".pdb") return rawPath;
 
   const pdbqtPath = rawPath.replace(/\.pdb$/, ".pdbqt");
+
   try {
-    await fs.access(pdbqtPath); // Exists
+    await fs.access(pdbqtPath);
     console.log("Using existing receptor PDBQT:", pdbqtPath);
   } catch {
     console.log("Converting receptor PDB to PDBQT...");
@@ -144,6 +153,58 @@ async function getPreparedReceptorPath(filename: string): Promise<string> {
   return pdbqtPath;
 }
 
+async function getReceptorFromSupabase(): Promise<string[]> {
+  const receptorRecords = await prisma.receptorFile.findMany({
+    select: {
+      filePath: true,
+    },
+  });
+
+  if (!receptorRecords || receptorRecords.length === 0) {
+    throw new Error("No receptor files found in database");
+  }
+
+  const preparedPaths: string[] = [];
+
+  for (const record of receptorRecords) {
+    const supabasePath = record.filePath;
+
+    const { data, error } = await supabase.storage
+      .from("receptors")
+      .download(supabasePath);
+
+    if (error || !data) {
+      console.error(`Failed to download ${supabasePath}:`, error?.message);
+      continue;
+    }
+
+    const buffer = await data.arrayBuffer();
+    const filename = path.basename(supabasePath);
+    // Remove date and time prefix (e.g., "2025-07-17 17:43:18_")
+    const sanitizedFilenameBase = filename.replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}_/, "").replace(/[: ]/g, "_");
+    let sanitizedFilename = sanitizedFilenameBase;
+    let counter = 1;
+    const receptorDir = path.join(process.cwd(), "receptors", "tmp_receptors");
+    while (fsSync.existsSync(path.join(receptorDir, sanitizedFilename))) {
+      const ext = path.extname(sanitizedFilenameBase);
+      const name = path.basename(sanitizedFilenameBase, ext);
+      sanitizedFilename = `${name}_${counter}${ext}`;
+      counter++;
+    }
+    const localPath = path.join(process.cwd(), "receptors", sanitizedFilename);
+
+    // Ensure directory exists
+    await fs.mkdir(path.dirname(localPath), { recursive: true });
+    await fs.writeFile(localPath, Buffer.from(buffer));
+
+    const preparedPath = await getPreparedReceptorPath(sanitizedFilename, localPath);
+
+    preparedPaths.push(preparedPath);
+  }
+
+  return preparedPaths;
+}
+
 async function dockLigands(ligandPaths: string[], receptorPath: string, config: any, jobId: string) {
   await prisma.jobs.update({
     where: { id: jobId },
@@ -151,12 +212,18 @@ async function dockLigands(ligandPaths: string[], receptorPath: string, config: 
       status: JobStatus.PROCESSING,
     },
   });
-  for (const pdbqt of ligandPaths.map((p) => p.replace(/\.pdb$/, ".pdbqt"))) {
-    const outFile = pdbqt.replace(".pdbqt", "_out.pdbqt");
+
+  const receptorBase = path.basename(receptorPath).replace(/\.pdbqt$/, "");
+
+  for (const ligandPath of ligandPaths) {
+    const ligandBase = path.basename(ligandPath).replace(/\.pdb$/, "");
+
+    const ligandPdbqt = ligandPath.replace(/\.pdb$/, ".pdbqt");
+    const outFile = ligandPdbqt.replace(".pdbqt", "_out.pdbqt");
 
     const vinaArgs = [
       "--receptor", receptorPath,
-      "--ligand", pdbqt,
+      "--ligand", ligandPdbqt,
       "--out", outFile,
       "--center_x", config.centerX.toString(),
       "--center_y", config.centerY.toString(),
@@ -172,13 +239,17 @@ async function dockLigands(ligandPaths: string[], receptorPath: string, config: 
 
     await runCommand("vina", vinaArgs);
 
-    // 🧪 Extract only MODEL 1
-    const fullOutput = pdbqt.replace(".pdbqt", "_out.pdbqt");
-    const model1Output = pdbqt.replace(".pdbqt", "_model1.pdbqt");
+    // 🧪 Extract only MODEL 1 and rename as receptor_ligand.pdb
+    const fullOutput = outFile;
+    const model1Output = path.join(
+      path.dirname(outFile),
+      `${receptorBase}_${ligandBase}_model1.pdbqt`
+    );
 
     await extractModel1Only(fullOutput, model1Output);
   }
 }
+
 
 function runCommand(cmd: string, args: string[]) {
   return new Promise<void>((resolve, reject) => {
@@ -230,7 +301,7 @@ async function zipModel1Outputs(jobDir: string, zipPath: string) {
     fs.readdir(jobDir).then((files) => {
       files.filter((f) => f.endsWith("_model1.pdbqt")).forEach((file) => {
         const filePath = path.join(jobDir, file);
-        archive.file(filePath, { name: file });
+        archive.file(filePath, { name: file.replace(".pdbqt", ".pdb") });
       });
       archive.finalize();
     });

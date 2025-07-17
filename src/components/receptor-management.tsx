@@ -95,11 +95,11 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const allowedTypes = [".pdbqt"]
+      const allowedTypes = [".pdb"]
       const fileExtension = "." + file.name.split(".").pop()?.toLowerCase()
 
       if (!allowedTypes.includes(fileExtension)) {
-        alert("Please select a PDBQT file")
+        alert("Please select a PDB file")
         return
       }
 
@@ -111,11 +111,11 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
     e.preventDefault()
     if (!selectedFile) return
 
-    const allowedTypes = ['.pdbqt']
+    const allowedTypes = ['.pdb']
     const fileExtension = '.' + selectedFile.name.split('.').pop()?.toLowerCase()
 
     if (!allowedTypes.includes(fileExtension)) {
-      alert('Only PDBQT files are allowed')
+      alert('Only PDB files are allowed')
       return
     }
 
@@ -133,7 +133,7 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
 
     const fileContent = await selectedFile.text()
     if (!fileContent.includes('ATOM') && !fileContent.includes('HETATM')) {
-      alert('File does not appear to be a valid PDB/PDBQT file')
+      alert('File does not appear to be a valid PDB file')
       return
     }
 
@@ -317,8 +317,8 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="file">Receptor File (PDB/PDBQT)</Label>
-                    <Input id="file" type="file" accept=".pdb,.pdbqt" onChange={handleFileChange} required />
+                    <Label htmlFor="file">Receptor File (PDB)</Label>
+                    <Input id="file" type="file" accept=".pdb" onChange={handleFileChange} required />
                     {selectedFile && (
                       <p className="text-sm text-muted-foreground">
                         Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
