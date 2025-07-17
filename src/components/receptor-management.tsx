@@ -35,6 +35,7 @@ import { addReceptor, deleteReceptor, getReceptors, updateReceptor } from "@/lib
 import { formatDateTimeMY } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { TOAST } from "@/lib/toast-messages"
+import { Description } from "@radix-ui/react-toast"
 
 interface ReceptorFile {
   id: number
@@ -303,10 +304,18 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
               </DialogHeader>
               <form onSubmit={handleUploadReceptor}>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Receptor Name</Label>
-                    <Input id="name" name="name" placeholder="e.g., Dengue NS3 Protease" required />
-                  </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="file">Receptor File (PDB)</Label>
+                    <Input id="file" type="file" accept=".pdb" onChange={handleFileChange} required />
+                    {selectedFile && (
+                      <p className="text-sm text-muted-foreground">
+                        Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                      </p>
+                    )}
+                    <small className="block text-muted-foreground mb-2">
+                      The uploaded file name will be used as the receptor name.
+                    </small>
+                    </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
                     <Textarea
@@ -315,15 +324,6 @@ export function ReceptorManagement({ onFileCountChange }: ReceptorManagementProp
                       placeholder="Brief description of the receptor structure"
                       required
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="file">Receptor File (PDB)</Label>
-                    <Input id="file" type="file" accept=".pdb" onChange={handleFileChange} required />
-                    {selectedFile && (
-                      <p className="text-sm text-muted-foreground">
-                        Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
-                      </p>
-                    )}
                   </div>
                 </div>
                 <DialogFooter className="mt-6">

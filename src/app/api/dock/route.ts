@@ -133,22 +133,17 @@ async function getPreparedReceptorPath(filename: string, rawPath: string): Promi
 
   const pdbqtPath = rawPath.replace(/\.pdb$/, ".pdbqt");
 
-  try {
-    await fs.access(pdbqtPath);
-    console.log("Using existing receptor PDBQT:", pdbqtPath);
-  } catch {
-    console.log("Converting receptor PDB to PDBQT...");
-    const script = path.join(PYTHON_SCRIPTS_DIR, "prepare_receptor4.py");
-    await runCommand("python3", [
-      script,
-      "-r",
-      rawPath,
-      "-o",
-      pdbqtPath,
-      "-A",
-      "checkhydrogens",
-    ]);
-  }
+  console.log("Converting receptor PDB to PDBQT...");
+  const script = path.join(PYTHON_SCRIPTS_DIR, "prepare_receptor4.py");
+  await runCommand("python3", [
+    script,
+    "-r",
+    rawPath,
+    "-o",
+    pdbqtPath,
+    "-A",
+    "checkhydrogens",
+  ]);
 
   return pdbqtPath;
 }
@@ -184,7 +179,7 @@ async function getReceptorFromSupabase(): Promise<string[]> {
     const sanitizedFilenameBase = filename.replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}_/, "").replace(/[: ]/g, "_");
     let sanitizedFilename = sanitizedFilenameBase;
     let counter = 1;
-    const receptorDir = path.join(process.cwd(), "receptors", "tmp_receptors");
+    const receptorDir = path.join(process.cwd(), "receptors");
     while (fsSync.existsSync(path.join(receptorDir, sanitizedFilename))) {
       const ext = path.extname(sanitizedFilenameBase);
       const name = path.basename(sanitizedFilenameBase, ext);
