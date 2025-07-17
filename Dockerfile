@@ -21,9 +21,6 @@ COPY package.json package-lock.json ./
 # Copy the prisma directory before running npm install
 COPY prisma ./prisma
 
-COPY entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh
-
 # Install Node modules
 RUN npm install
 
@@ -91,3 +88,4 @@ EXPOSE 3000
 # Ensure your Node.js application is set up to call 'python3' or 'python'
 # which now has MolKit available via the virtual environment and PYTHONPATH.
 # If your Node.js app directly calls the Python script, it will now find the modules.
+CMD ["npm", "run", "start"]
