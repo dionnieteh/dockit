@@ -1,23 +1,19 @@
-"use client"
 import { createClient } from "@supabase/supabase-js";
-
-console.log('=== BUILD TIME vs RUNTIME DEBUG ===');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY present:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
-// Check if these are literally the strings from your Railway config
-console.log('URL value:', JSON.stringify(process.env.NEXT_PUBLIC_SUPABASE_URL));
-console.log('Key value:', JSON.stringify(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY));
-
-// Check all available environment variables
-console.log('All env keys:', Object.keys(process.env));
-console.log('NEXT_PUBLIC keys:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(
-  supabaseUrl || 'missing-url',
-  supabaseAnonKey || 'missing-key'
-);
+// Debug logging for client-side only
+if (typeof window !== 'undefined') {
+  console.log('Client-side Supabase creation...');
+  console.log('URL present:', !!supabaseUrl);
+  console.log('Key present:', !!supabaseAnonKey);
+}
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  const errorMsg = `Missing Supabase environment variables. URL: ${!!supabaseUrl}, Key: ${!!supabaseAnonKey}`;
+  console.error(errorMsg);
+  throw new Error(errorMsg);
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
