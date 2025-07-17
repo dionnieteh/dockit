@@ -177,6 +177,7 @@ async function dockLigands(ligandPaths: string[], receptorPath: string, config: 
     const model1Output = pdbqt.replace(".pdbqt", "_model1.pdbqt");
 
     await extractModel1Only(fullOutput, model1Output);
+    await convertPdbqtToPdb(model1Output);
   }
 }
 
@@ -200,6 +201,12 @@ function runCommand(cmd: string, args: string[]) {
       reject(new Error(`Failed to start command ${fullCommand}: ${err.message}`));
     });
   });
+}
+
+async function convertPdbqtToPdb(pdbqtPath: string): Promise<string> {
+  const pdbPath = pdbqtPath.replace(/\.pdbqt$/, ".pdb");
+  await runCommand("obabel", ["-ipdbqt", pdbqtPath, "-opdb", "-O", pdbPath]);
+  return pdbPath;
 }
 
 async function extractModel1Only(inputPath: string, outputPath: string) {
@@ -228,10 +235,12 @@ async function zipModel1Outputs(jobDir: string, zipPath: string) {
 
     // Only include _model1.pdbqt files
     fs.readdir(jobDir).then((files) => {
-      files.filter((f) => f.endsWith("_model1.pdbqt")).forEach((file) => {
-        const filePath = path.join(jobDir, file);
-        archive.file(filePath, { name: file });
-      });
+      files
+        .filter((f) => f.endsWith("_model1.pdb"))
+        .forEach((file) => {
+          const filePath = path.join(jobDir, file);
+          archive.file(filePath, { name: file });
+        });
       archive.finalize();
     });
   });
