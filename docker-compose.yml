@@ -4,8 +4,9 @@ services:
     container_name: dockit
     ports:
       - "3000:3000"
-    env_file:
-      - .env
+    #TODO: commented out for production
+    # env_file:
+    #   - .env
     restart: unless-stopped
     #TODO: remove everything here
     volumes:
