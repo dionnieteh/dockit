@@ -1,5 +1,3 @@
-import { UserRole } from "@/lib/user-role";
-
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
@@ -17,7 +15,7 @@ async function main() {
       lastName: 'User',
       email: 'admin@dockit.app',
       password: hashedPassword,
-      role: UserRole.ADMIN,
+      role: "Admin",
       institution: 'DockIt Organization',
       purpose: 'Admin access and platform maintenance',
     },
