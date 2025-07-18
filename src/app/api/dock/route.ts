@@ -127,7 +127,7 @@ async function saveUploadedFiles(files: File[], jobDir: string) {
 async function convertLigandsToPdbqt(ligandPaths: string[]) {
   const ligandScript = path.join(PYTHON_SCRIPTS_DIR, "prepare_ligand4.py");
   for (const pdb of ligandPaths) {
-    const out = pdb.replace(/\.pdb$/, ".pdbqt");
+    const out = pdb.replace(/\.(pdb|mol2)$/, ".pdbqt");
     await runCommand("python3", [ligandScript, "-l", pdb, "-o", out]);
   }
 }
@@ -137,11 +137,11 @@ async function getPreparedReceptorPath(filename: string, rawPath: string): Promi
 
   if (ext !== ".pdb") return rawPath;
 
-  const pdbqtPath = rawPath.replace(/\.pdb$/, ".pdbqt");
+  const pdbqtPath = rawPath.replace(/\.pdb$/, ".pdbqt");  
 
   const script = path.join(PYTHON_SCRIPTS_DIR, "prepare_receptor4.py");
   await runCommand("python3", [
-    script, 
+    script,
     "-r",
     rawPath,
     "-o",
