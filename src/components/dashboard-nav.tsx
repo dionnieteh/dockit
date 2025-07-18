@@ -67,12 +67,15 @@ export function DashboardNav() {
   return (
     <div className="flex h-full flex-col p-4">
       <div className="py-2">
-        <Link
-          href="/"
-          className="mb-2 flex items-center px-4 text-lg font-semibold tracking-tight hover:text-primary"
-        >
-          DockIt
-        </Link>
+        <div className="m-4">
+          <Link href="/" >
+            <img
+              src="/dockit.svg"
+              alt="DockIt Logo"
+              className="w-2/3"
+            />
+          </Link>
+        </div>
         <div className="space-y-1">
           {navItems.map((item) => (
             <Link

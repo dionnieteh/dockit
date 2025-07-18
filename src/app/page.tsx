@@ -6,10 +6,16 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold px-4">DockIt</span>
+          <div className="flex items-center gap-4 mx-12">
+            <Link href="/" className="flex items-center h-12">
+              <img
+                src="/dockit.svg"
+                alt="DockIt Logo"
+                className="h-12 w-auto"
+              />
+            </Link>
           </div>
-          <nav className="flex items-center gap-4">
+          <nav className="flex items-center gap-4 mx-12">
             <Link href="/login">
               <Button variant="ghost">Login</Button>
             </Link>
