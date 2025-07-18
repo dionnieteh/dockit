@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value
   const pathname = request.nextUrl.pathname
 
-  const protectedRoutes = ['/docking', '/admin']
+  const protectedRoutes = ['/docking', '/admin', '/history']
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
   if (!isProtectedRoute) {
@@ -42,5 +42,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/docking', '/docking/:path*', '/admin', '/admin/:path*'],
+  matcher: ['/docking', '/docking/:path*', '/admin', '/admin/:path*', '/history', '/history/:path*']
 }

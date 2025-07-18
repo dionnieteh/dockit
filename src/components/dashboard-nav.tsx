@@ -16,25 +16,35 @@ export function DashboardNav() {
   if (isLoading || !user) return null
 
   const isAdmin = user?.role === UserRole.ADMIN
-
+  
   const userNavItems = [
-    {
-      title: "Docking History",
-      href: "/results",
-      icon: FileText,
-    },
-  ]
-
-  const adminNavItems = [
     {
       title: "Start Docking",
       href: "/docking",
       icon: Atom,
     },
     {
+      title: "Docking History",
+      href: "/history",
+      icon: FileText,
+    },
+  ]
+  
+  const adminNavItems = [
+    {
       title: "Admin Dashboard",
       href: "/admin",
       icon: UserRoundCog,
+    },
+    {
+      title: "Start Docking",
+      href: "/docking",
+      icon: Atom,
+    },
+    {
+      title: "Docking History",
+      href: "/history",
+      icon: FileText,
     }
   ]
 
