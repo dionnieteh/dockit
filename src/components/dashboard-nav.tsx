@@ -19,22 +19,32 @@ export function DashboardNav() {
 
   const userNavItems = [
     {
+      title: "Start Docking",
+      href: "/docking",
+      icon: Atom,
+    },
+    {
       title: "Docking History",
-      href: "/results",
+      href: "/history",
       icon: FileText,
     },
   ]
 
   const adminNavItems = [
     {
+      title: "Admin Dashboard",
+      href: "/admin",
+      icon: UserRoundCog,
+    },
+    {
       title: "Start Docking",
       href: "/docking",
       icon: Atom,
     },
     {
-      title: "Admin Dashboard",
-      href: "/admin",
-      icon: UserRoundCog,
+      title: "Docking History",
+      href: "/history",
+      icon: FileText,
     }
   ]
 
@@ -57,7 +67,12 @@ export function DashboardNav() {
   return (
     <div className="flex h-full flex-col p-4">
       <div className="py-2">
-        <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">DockIt</h2>
+        <Link
+          href="/"
+          className="mb-2 flex items-center px-4 text-lg font-semibold tracking-tight hover:text-primary"
+        >
+          DockIt
+        </Link>
         <div className="space-y-1">
           {navItems.map((item) => (
             <Link
