@@ -4,14 +4,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { capitalize, formatDateTimeMY } from "@/lib/utils";
-import { getJobs } from "@/lib/jobs";
+import { getJobsByUser } from "@/lib/jobs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input"
 import { JobStatus } from "@/lib/job-status";
 import { Button } from "./ui/button";
 import { RotateCcw } from "lucide-react";
 
-interface Job {
+interface JobHistory {
   id: string;
   name: string;
   gridSizeX: number;
@@ -25,24 +25,21 @@ interface Job {
   numModes: number;
   verbosity: number;
   status: string;
-  errorMessage?: string;
   createdAt: string,
   completedAt?: string;
-  user: {
-    firstName: string;
-    email: string;
-  };
 }
 
-interface JobManagementProps {
-  onJobCountChange?: () => void
+interface JobHistoryProps {
+  onJobCountChange?: () => void,
+  userId: string;
 }
 
-export function JobConfiguration({ onJobCountChange }: JobManagementProps) {
-  const [jobs, setJobs] = useState<Job[]>([]);
+export function JobHistory({ onJobCountChange, userId }: JobHistoryProps) {
+  const [jobs, setJobs] = useState<JobHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("All");
+  const [jobCount, setJobCount] = useState<number>(0)
 
   useEffect(() => {
     fetchJobs();
@@ -50,8 +47,8 @@ export function JobConfiguration({ onJobCountChange }: JobManagementProps) {
 
   const fetchJobs = async () => {
     try {
-      const params = await getJobs();
-      const transformed: Job[] = params.map((job: any) => ({
+      const params = await getJobsByUser(userId);
+      const transformed: JobHistory[] = params.jobs.map((job: any) => ({
         id: job.id,
         name: job.name,
         gridSizeX: job.gridSizeX,
@@ -65,15 +62,11 @@ export function JobConfiguration({ onJobCountChange }: JobManagementProps) {
         numModes: job.numModes,
         verbosity: job.verbosity,
         status: job.status,
-        errorMessage: job.errorMessage,
         createdAt: job.createdAt,
         completedAt: job.completedAt,
-        user: {
-          firstName: job.user.firstName,
-          email: job.user.email,
-        },
       }));
       setJobs(transformed);
+      setJobCount(params.count);
     } catch (err) {
       console.error("Failed to fetch docking jobs", err);
     } finally {
@@ -93,10 +86,7 @@ export function JobConfiguration({ onJobCountChange }: JobManagementProps) {
       currentJobs = currentJobs.filter(
         (job) =>
           job.name.toLowerCase().includes(lowerCaseSearchTerm) ||
-          job.status.toLowerCase().includes(lowerCaseSearchTerm) ||
-          (job.errorMessage && job.errorMessage.toLowerCase().includes(lowerCaseSearchTerm)) ||
-          job.user.firstName.toLowerCase().includes(lowerCaseSearchTerm) ||
-          job.user.email.toLowerCase().includes(lowerCaseSearchTerm)
+          job.status.toLowerCase().includes(lowerCaseSearchTerm)
       );
     }
 
@@ -110,11 +100,11 @@ export function JobConfiguration({ onJobCountChange }: JobManagementProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Docking Jobs</CardTitle>
-        <CardDescription>Displaying all molecular docking jobs</CardDescription>
+        <CardTitle>Docking History</CardTitle>
+        <CardDescription>Displaying all ({jobCount}) molecular docking jobs. Result files are downloadable for 7 days.</CardDescription>
         <div className="flex flex-col md:flex-row gap-4 mt-4 w-full justify-between">
           <Input
-            placeholder="Search by job name, status, error, user first name or email"
+            placeholder="Search by job name or status"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full"
@@ -169,10 +159,8 @@ export function JobConfiguration({ onJobCountChange }: JobManagementProps) {
                   <TableHead className="font-bold">Number Modes</TableHead>
                   <TableHead className="font-bold">Verbosity</TableHead>
                   <TableHead className="font-bold">Status</TableHead>
-                  <TableHead className="font-bold">Error</TableHead>
                   <TableHead className="font-bold">Created At</TableHead>
                   <TableHead className="font-bold">Completed At</TableHead>
-                  <TableHead className="font-bold">User</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -190,10 +178,8 @@ export function JobConfiguration({ onJobCountChange }: JobManagementProps) {
                     <TableCell>{job.numModes}</TableCell>
                     <TableCell>{job.verbosity}</TableCell>
                     <TableCell>{capitalize(job.status)}</TableCell>
-                    <TableCell>{job.errorMessage}</TableCell>
                     <TableCell>{formatDateTimeMY(new Date(job.createdAt))}</TableCell>
                     <TableCell>{job.completedAt ? formatDateTimeMY(new Date(job.completedAt)) : ""}</TableCell>
-                    <TableCell>{`${capitalize(job.user.firstName)}: ${job.user.email}`}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
