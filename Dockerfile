@@ -22,7 +22,7 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma
 
 # Install Node modules
-RUN npm install
+RUN npm ci --prefer-offline --no-audit
 
 # Copy all application source code for building (this includes src/scripts)
 COPY . .
