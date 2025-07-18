@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getDefaultParameters } from '@/lib/param'
 import { addJob } from "@/lib/jobs";
 import { TOAST } from "@/lib/toast-messages";
+import { getReceptorCount } from "@/lib/receptors";
 
 export default function NewJobPage() {
   const [defaultParams, setDefaultParams] = useState<any | null>(null)
@@ -38,7 +39,7 @@ export default function NewJobPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [user, setUser] = useState<{ id: number; name: string; email: string, role: string } | null>(null);
-
+  const [estTime, setEstTime] = useState<string>("")
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [uploadKey, setUploadKey] = useState(0);
@@ -130,6 +131,8 @@ export default function NewJobPage() {
       alert("Upload at least one PDB");
       return;
     }
+
+    countEstTime(files.length)
     setIsSubmitting(true);
 
     const formData = new FormData();
@@ -165,6 +168,20 @@ export default function NewJobPage() {
       });
     }
     setIsSubmitting(false);
+  }
+
+  async function countEstTime(fileCount: number) {
+    const result = await getReceptorCount();
+
+    const receptorCount = typeof result === "number" ? result : 0;
+    const est = fileCount * receptorCount * 30;
+
+    const minutes = Math.floor(est / 60);
+    const seconds = est % 60;
+
+    const estText = `${minutes} minute${minutes !== 1 ? "s" : ""} ${seconds} second${seconds !== 1 ? "s" : ""}`;
+
+    setEstTime(estText);
   }
 
   if (!defaultParams || isCheckingAuth) {
@@ -295,7 +312,7 @@ export default function NewJobPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
+                  Processing... This will take about {estTime}.
                 </>
               ) : (
                 "Start Docking"
