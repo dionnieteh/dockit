@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     if (!ligandFiles.length) {
       return NextResponse.json({ error: "No ligand files uploaded" }, { status: 400 });
     }
-    console.log(parsedMetadata)
+
     // Step 1: Create job entry in DB
     const jobMetadata = await prisma.jobs.create(
       {
@@ -45,7 +45,6 @@ export async function POST(req: Request) {
     )
 
     jobId = jobMetadata.id;
-    console.log(jobId)
     const jobDir = path.join(process.cwd(), "jobs", `job-${jobId}`);
     await saveUploadedFiles(ligandFiles, jobDir);
 
@@ -121,7 +120,7 @@ async function saveUploadedFiles(files: File[], jobDir: string) {
 async function convertLigandsToPdbqt(ligandPaths: string[]) {
   const ligandScript = path.join(PYTHON_SCRIPTS_DIR, "prepare_ligand4.py");
   for (const pdb of ligandPaths) {
-    const out = pdb.replace(/\.pdb$/, ".pdbqt");
+    const out = pdb.replace(/\.(pdb|mol2)$/i, ".pdbqt");
     await runCommand("python3", [ligandScript, "-l", pdb, "-o", out]);
   }
 }
