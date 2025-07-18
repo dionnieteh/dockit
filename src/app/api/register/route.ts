@@ -44,16 +44,6 @@ export async function POST(req: Request) {
       expiresIn: "7d",
     })
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        expiresAt: expiresAt,
-        sessionId: token,
-      },
-    });
-
     const cookie = serialize('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
