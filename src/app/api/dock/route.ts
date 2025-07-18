@@ -133,10 +133,9 @@ async function getPreparedReceptorPath(filename: string, rawPath: string): Promi
 
   const pdbqtPath = rawPath.replace(/\.pdb$/, ".pdbqt");
 
-  console.log("Converting receptor PDB to PDBQT...");
   const script = path.join(PYTHON_SCRIPTS_DIR, "prepare_receptor4.py");
   await runCommand("python3", [
-    script,
+    script, 
     "-r",
     rawPath,
     "-o",

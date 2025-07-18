@@ -7,6 +7,5 @@ export const prisma =
   new PrismaClient({
     log: ['query'],
   });
-console.log('DATABASE_URL:', process.env.DATABASE_PUBLIC_URL);
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
