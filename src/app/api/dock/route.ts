@@ -89,6 +89,12 @@ export async function POST(req: Request) {
         errorMessage: err instanceof Error ? err.message : String(err)
       },
     });
+    try {
+      const receptorTmpDir = path.join(process.cwd(), "receptors");
+      await fs.rm(receptorTmpDir, { recursive: true, force: true });
+    } catch (cleanupErr) {
+      console.warn("Failed to clean up receptor tmp dir:", cleanupErr);
+    }
     return NextResponse.json({ error: "Docking job failed" + err });
   }
 }
