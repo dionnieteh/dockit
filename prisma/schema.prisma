@@ -8,10 +8,10 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   firstName   String
   lastName    String
-  email       String   @unique
+  email       String  @unique
   password    String
   role        String
   institution String?
@@ -37,6 +37,7 @@ model Jobs {
   exhaustiveness Int
   numModes       Int
   verbosity      Int
+  downloadPath   String?
   user           User      @relation(fields: [userId], references: [id])
 }
 
