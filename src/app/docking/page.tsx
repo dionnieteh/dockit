@@ -39,7 +39,7 @@ export default function NewJobPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [user, setUser] = useState<{ id: number; name: string; email: string, role: string } | null>(null);
-  const [estTime, setEstTime] = useState<string>("")
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [uploadKey, setUploadKey] = useState(0);
@@ -102,6 +102,23 @@ export default function NewJobPage() {
     checkAuthentication();
   }, [router]);
 
+  useEffect(() => {
+    if (remainingSeconds === null || remainingSeconds <= 0) return;
+
+    const interval = setInterval(() => {
+      setRemainingSeconds(prev => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [remainingSeconds]);
+
   const handleFileChange = (newFiles: File[]) => {
     setFiles(newFiles);
   };
@@ -123,6 +140,7 @@ export default function NewJobPage() {
     setJobId(null)
     setIsSubmitting(false)
     setUploadKey((prev) => prev + 1)
+    setRemainingSeconds(null)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -132,7 +150,7 @@ export default function NewJobPage() {
       return;
     }
 
-    countEstTime(files.length)
+    await countEstTime(files.length)
     setIsSubmitting(true);
 
     const formData = new FormData();
@@ -167,21 +185,22 @@ export default function NewJobPage() {
         variant: TOAST.DOCKING_PROCESS_ERROR.variant,
       });
     }
+
     setIsSubmitting(false);
   }
 
   async function countEstTime(fileCount: number) {
     const result = await getReceptorCount();
-
     const receptorCount = typeof result === "number" ? result : 0;
     const est = fileCount * receptorCount * 30;
+    setRemainingSeconds(est);
+  }
 
-    const minutes = Math.floor(est / 60);
-    const seconds = est % 60;
-
-    const estText = `${minutes} minute${minutes !== 1 ? "s" : ""} ${seconds} second${seconds !== 1 ? "s" : ""}`;
-
-    setEstTime(estText);
+  function formatTime(seconds: number | null): string {
+    if (seconds === null) return "";
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}m ${secs}s`;
   }
 
   if (!defaultParams || isCheckingAuth) {
@@ -312,7 +331,7 @@ export default function NewJobPage() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing... This will take about {estTime}.
+                  Processing... This will take about {formatTime(remainingSeconds)}.
                 </>
               ) : (
                 "Start Docking"
