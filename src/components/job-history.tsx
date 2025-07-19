@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { JobStatus } from "@/lib/job-status";
 import { Button } from "./ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Download } from "lucide-react";
 
 interface JobHistory {
   id: string;
@@ -27,6 +27,7 @@ interface JobHistory {
   status: string;
   createdAt: string,
   completedAt?: string;
+  downloadPath?: string;
 }
 
 interface JobHistoryProps {
@@ -64,6 +65,7 @@ export function JobHistory({ onJobCountChange, userId }: JobHistoryProps) {
         status: job.status,
         createdAt: job.createdAt,
         completedAt: job.completedAt,
+        downloadPath: job.downloadPath
       }));
       setJobs(transformed);
       setJobCount(params.count);
@@ -161,6 +163,7 @@ export function JobHistory({ onJobCountChange, userId }: JobHistoryProps) {
                   <TableHead className="font-bold">Status</TableHead>
                   <TableHead className="font-bold">Created At</TableHead>
                   <TableHead className="font-bold">Completed At</TableHead>
+                  <TableHead className="font-bold">Download</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -180,6 +183,24 @@ export function JobHistory({ onJobCountChange, userId }: JobHistoryProps) {
                     <TableCell>{capitalize(job.status)}</TableCell>
                     <TableCell>{formatDateTimeMY(new Date(job.createdAt))}</TableCell>
                     <TableCell>{job.completedAt ? formatDateTimeMY(new Date(job.completedAt)) : ""}</TableCell>
+                    <TableCell>
+                      {job.status === JobStatus.COMPLETE ? (
+                        <a
+                          href={`/api/download/${job.id}`}
+                          download={`results_${job.id}.zip`}
+                          className="inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                      ) : (
+                        <button
+                          disabled
+                          className="inline-flex items-center bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

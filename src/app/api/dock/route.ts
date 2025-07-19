@@ -65,12 +65,29 @@ export async function POST(req: Request) {
     const zipPath = path.join(jobDir, "results.zip");
     await zipModel1Outputs(jobDir, zipPath);
 
+    // Upload to Supabase
+    const fileData = await fs.readFile(zipPath);
+    const uploadName = `${jobMetadata.userId}/results_${jobId}.zip`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("docking-result")
+      .upload(uploadName, fileData, {
+        contentType: "application/zip",
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error("Failed to upload results.zip:", uploadError.message);
+      throw new Error("Upload to Supabase failed");
+    }
+
     // Step 6: Update DB status
     await prisma.jobs.update({
       where: { id: jobId },
       data: {
         status: JobStatus.COMPLETE,
-        completedAt: new Date()
+        completedAt: new Date(),
+        downloadPath: uploadName,
       },
     });
 
@@ -137,7 +154,7 @@ async function getPreparedReceptorPath(filename: string, rawPath: string): Promi
 
   if (ext !== ".pdb") return rawPath;
 
-  const pdbqtPath = rawPath.replace(/\.pdb$/, ".pdbqt");  
+  const pdbqtPath = rawPath.replace(/\.pdb$/, ".pdbqt");
 
   const script = path.join(PYTHON_SCRIPTS_DIR, "prepare_receptor4.py");
   await runCommand("python3", [

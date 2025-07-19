@@ -67,6 +67,7 @@ export async function getJobsByUser(userId: string) {
       verbosity: job.verbosity,
       createdAt: job.createdAt,
       completedAt: job.completedAt,
+      downloadPath: job.downloadPath,
       userId: job.user.userId
     }));
 
