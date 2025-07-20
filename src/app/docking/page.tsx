@@ -327,15 +327,24 @@ export default function NewJobPage() {
             </Tabs>
           </CardContent>
           <CardFooter className="flex flex-col sm:flex-row gap-4">
-            <Button type="submit" disabled={isSubmitting || files.length === 0}>
+            <Button
+              type="submit"
+              disabled={isSubmitting || files.length === 0}
+              onClick={() => {
+                if (jobId) resetForm();
+              }}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing... This will take about {formatTime(remainingSeconds)}.
                 </>
+              ) : jobId ? (
+                "Start New Job"
               ) : (
                 "Start Docking"
-              )}
+              )
+              }
             </Button>
 
             {jobId && (
@@ -347,9 +356,6 @@ export default function NewJobPage() {
                 >
                   Download Results
                 </a>
-                <Button variant="outline" onClick={resetForm}>
-                  Start New Job
-                </Button>
               </div>
             )}
           </CardFooter>
