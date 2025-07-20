@@ -50,19 +50,12 @@ RUN apt-get update && apt-get install -y \
     libatlas-base-dev \
     libxml2-dev \
     libopenmpi-dev \
-    && git clone https://github.com/openbabel/openbabel.git && \
-    cd openbabel && \
-    mkdir build && cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    make install && \
-    ldconfig && \
-    cd ../.. && rm -rf openbabel && \
-    apt-get clean && \
+    openbabel \
+    && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Optional: confirm obabel is installed (debug)
-# RUN obabel -:CC -O ethane.pdb -h
+RUN obabel -:CC -O ethane.pdb -h
 
 RUN ln -s /usr/bin/python3 /usr/bin/python
 

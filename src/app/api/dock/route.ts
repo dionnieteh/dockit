@@ -51,13 +51,13 @@ export async function POST(req: Request) {
 
     // Step 2: Convert ligands
     const ligandPaths = ligandFiles.map(file => path.join(jobDir, file.name));
-    await convertLigandsToPdbqt(ligandPaths);
+    const updatedLigandPaths = await convertLigandsToPdbqt(ligandPaths);
 
     // Step 3: Prepare receptor
     const receptorPath = await getPreparedReceptorPath("3c5x.pdb");
 
     // Step 4: Docking
-    await dockLigands(ligandPaths, receptorPath, parsedMetadata, jobId);
+    await dockLigands(updatedLigandPaths, receptorPath, parsedMetadata, jobId);
 
     // Step 5: Zip outputs
     const zipPath = path.join(jobDir, "results.zip");
@@ -109,12 +109,22 @@ async function saveUploadedFiles(files: File[], jobDir: string) {
   }
 }
 
-async function convertLigandsToPdbqt(ligandPaths: string[]) {
+async function convertLigandsToPdbqt(ligandPaths: string[]): Promise<string[]> {
   const ligandScript = path.join(PYTHON_SCRIPTS_DIR, "prepare_ligand4.py");
-  for (const pdb of ligandPaths) {
-    const out = pdb.replace(/\.pdb$/, ".pdbqt");
-    await runCommand("python3", [ligandScript, "-l", pdb, "-o", out]);
+  const outputPaths: string[] = [];
+
+  for (let inputPath of ligandPaths) {
+    if (inputPath.endsWith(".mol2")) {
+      console.log("sanitise");
+      inputPath = await sanitizeMol2File(inputPath);
+    }
+
+    const outPath = inputPath.replace(/\.(mol2|pdb)$/, ".pdbqt");
+    await runCommand("python3", [ligandScript, "-l", inputPath, "-o", outPath]);
+    outputPaths.push(outPath);
   }
+
+  return outputPaths;
 }
 
 async function getPreparedReceptorPath(filename: string): Promise<string> {
@@ -177,7 +187,6 @@ async function dockLigands(ligandPaths: string[], receptorPath: string, config: 
     const model1Output = pdbqt.replace(".pdbqt", "_model1.pdbqt");
 
     await extractModel1Only(fullOutput, model1Output);
-    await convertPdbqtToPdb(model1Output);
   }
 }
 
@@ -201,12 +210,6 @@ function runCommand(cmd: string, args: string[]) {
       reject(new Error(`Failed to start command ${fullCommand}: ${err.message}`));
     });
   });
-}
-
-async function convertPdbqtToPdb(pdbqtPath: string): Promise<string> {
-  const pdbPath = pdbqtPath.replace(/\.pdbqt$/, ".pdb");
-  await runCommand("obabel", ["-ipdbqt", pdbqtPath, "-opdb", "-O", pdbPath]);
-  return pdbPath;
 }
 
 async function extractModel1Only(inputPath: string, outputPath: string) {
@@ -235,13 +238,17 @@ async function zipModel1Outputs(jobDir: string, zipPath: string) {
 
     // Only include _model1.pdbqt files
     fs.readdir(jobDir).then((files) => {
-      files
-        .filter((f) => f.endsWith("_model1.pdb"))
-        .forEach((file) => {
-          const filePath = path.join(jobDir, file);
-          archive.file(filePath, { name: file });
-        });
+      files.filter((f) => f.endsWith("_model1.pdbqt")).forEach((file) => {
+        const filePath = path.join(jobDir, file);
+        archive.file(filePath, { name: file });
+      });
       archive.finalize();
     });
   });
+}
+
+async function sanitizeMol2File(filePath: string): Promise<string> {
+  const sanitizedPath = filePath.replace(/\.mol2$/, ".cleaned.mol2");
+  await runCommand("obabel", [filePath, "-O", sanitizedPath]);
+  return sanitizedPath;
 }
