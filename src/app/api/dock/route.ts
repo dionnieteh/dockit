@@ -51,14 +51,14 @@ export async function POST(req: Request) {
 
     // Step 2: Convert ligands
     const ligandPaths = ligandFiles.map(file => path.join(jobDir, file.name));
-    await convertLigandsToPdbqt(ligandPaths);
+    const updatedLigandPaths = await convertLigandsToPdbqt(ligandPaths);
 
     // Step 3: Prepare receptor
     const receptorPaths = await getReceptorFromSupabase();
 
     // Step 4: Docking
     for (const receptor of receptorPaths) {
-      await dockLigands(ligandPaths, receptor, parsedMetadata, jobId);
+      await dockLigands(updatedLigandPaths, receptor, parsedMetadata, jobId);
     }
 
     // Step 5: Zip outputs
@@ -141,12 +141,22 @@ async function saveUploadedFiles(files: File[], jobDir: string) {
   }
 }
 
-async function convertLigandsToPdbqt(ligandPaths: string[]) {
+async function convertLigandsToPdbqt(ligandPaths: string[]): Promise<string[]> {
   const ligandScript = path.join(PYTHON_SCRIPTS_DIR, "prepare_ligand4.py");
-  for (const pdb of ligandPaths) {
-    const out = pdb.replace(/\.(pdb|mol2)$/, ".pdbqt");
-    await runCommand("python3", [ligandScript, "-l", pdb, "-o", out]);
+  const outputPaths: string[] = [];
+
+  for (let inputPath of ligandPaths) {
+    if (inputPath.endsWith(".mol2")) {
+      console.log("sanitise");
+      inputPath = await sanitizeMol2File(inputPath);
+    }
+
+    const outPath = inputPath.replace(/\.(mol2|pdb)$/, ".pdbqt");
+    await runCommand("python3", [ligandScript, "-l", inputPath, "-o", outPath]);
+    outputPaths.push(outPath);
   }
+
+  return outputPaths;
 }
 
 async function getPreparedReceptorPath(filename: string, rawPath: string): Promise<string> {
@@ -323,4 +333,10 @@ async function zipModel1Outputs(jobDir: string, zipPath: string) {
       archive.finalize();
     });
   });
+}
+
+async function sanitizeMol2File(filePath: string): Promise<string> {
+  const sanitizedPath = filePath.replace(/\.mol2$/, ".cleaned.mol2");
+  await runCommand("obabel", [filePath, "-O", sanitizedPath]);
+  return sanitizedPath;
 }
