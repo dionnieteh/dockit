@@ -20,6 +20,7 @@ import { getDefaultParameters } from '@/lib/param'
 import { addJob } from "@/lib/jobs";
 import { TOAST } from "@/lib/toast-messages";
 import { getReceptorCount } from "@/lib/receptors";
+import { checkAuthUser } from "@/lib/users";
 
 export default function NewJobPage() {
   const [defaultParams, setDefaultParams] = useState<any | null>(null)
@@ -70,37 +71,26 @@ export default function NewJobPage() {
   }, [])
 
   useEffect(() => {
-    const checkAuthentication = async () => {
+    const currentPath = window.location.pathname;
+    const redirectToLogin = () => {
+      router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
+    };
+
+    (async () => {
       setIsCheckingAuth(true);
       setAuthError(null);
 
       try {
-        const response = await fetch("/api/me", {
-          method: 'GET',
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          const currentPath = window.location.pathname;
-          router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
-          return;
-        }
+        const userData = await checkAuthUser();
+        setUser(userData);
       } catch (error) {
         setAuthError("Failed to verify authentication");
-        setTimeout(() => {
-          const currentPath = window.location.pathname;
-          router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
-        }, 2000);
+        setTimeout(redirectToLogin, 2000);
       } finally {
         setIsCheckingAuth(false);
       }
-    };
-
-    checkAuthentication();
-  }, [router]);
+    })();
+  }, []);
 
   useEffect(() => {
     if (remainingSeconds === null || remainingSeconds <= 0) return;

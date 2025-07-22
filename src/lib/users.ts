@@ -1,4 +1,21 @@
 // src/lib/users.ts
+export async function checkAuthUser() {
+  try {
+    const res = await fetch("/api/me", {
+      method: "GET",
+      credentials: "include",
+    });
+  
+    if (!res.ok) {
+      throw new Error("Not authenticated");
+    }
+    return await res.json();
+  } catch (err: any) {
+    console.error(err.message)
+    return { error: err.message }
+  }
+}
+
 export async function getUsers() {
   try {
     const res = await fetch('/api/admin/users')
