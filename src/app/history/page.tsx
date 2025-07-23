@@ -6,6 +6,7 @@ import { DashboardShell } from "@/components/dashboard-shell"
 import { JobHistory } from "@/components/job-history"
 import { Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { checkAuthUser } from "@/lib/users"
 
 export default function JobHistoryPage() {
   const [refreshKey, setRefreshKey] = useState(0)
@@ -16,33 +17,26 @@ export default function JobHistoryPage() {
   const [userId, setUserId] = useState<string>("")
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const currentPath = window.location.pathname;
+    const redirectToLogin = () => {
+      router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
+    };
+
+    (async () => {
       setIsCheckingAuth(true);
       setAuthError(null);
+
       try {
-        const res = await fetch("/api/me", {
-          method: "GET",
-          credentials: "include",
-        })
-
-        if (!res.ok) throw new Error("Not authenticated")
-
-        const userData = await res.json()
-
-        setUser(userData)
-        setUserId(userData.id)
-      } catch (err) {
-        setAuthError("Unauthorized access. Redirecting...")
-        setTimeout(() => {
-          router.replace("/login?redirect=/history")
-        }, 2000)
+        const userData = await checkAuthUser();
+        setUser(userData);
+      } catch (error) {
+        setAuthError("Failed to verify authentication");
+        setTimeout(redirectToLogin, 2000);
       } finally {
-        setIsCheckingAuth(false)
+        setIsCheckingAuth(false);
       }
-    }
-
-    checkAuth()
-  }, [router])
+    })();
+  }, []);
 
   const handleJobCountChange = useCallback(() => {
     setRefreshKey(prev => prev + 1)

@@ -22,6 +22,7 @@ import { TOAST } from "@/lib/toast-messages";
 import { getReceptorCount, getReceptors } from "@/lib/receptors";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check, ChevronDown } from "lucide-react"
+import { checkAuthUser } from "@/lib/users";
 
 export default function NewJobPage() {
   const [defaultParams, setDefaultParams] = useState<any | null>(null)
@@ -78,50 +79,26 @@ export default function NewJobPage() {
   }, [])
 
   useEffect(() => {
-    const fetchReceptor = async () => {
-      try {
-        const data = await getReceptors()
-        setReceptors(data)
-      } catch (err) {
-        console.error("Failed to fetch receptors for docking", err)
-      }
-    }
+    const currentPath = window.location.pathname;
+    const redirectToLogin = () => {
+      router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
+    };
 
-    fetchReceptor()
-  }, [])
-
-  useEffect(() => {
-    const checkAuthentication = async () => {
+    (async () => {
       setIsCheckingAuth(true);
       setAuthError(null);
 
       try {
-        const response = await fetch("/api/me", {
-          method: 'GET',
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          const currentPath = window.location.pathname;
-          router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
-          return;
-        }
+        const userData = await checkAuthUser();
+        setUser(userData);
       } catch (error) {
         setAuthError("Failed to verify authentication");
-        setTimeout(() => {
-          const currentPath = window.location.pathname;
-          router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
-        }, 2000);
+        setTimeout(redirectToLogin, 2000);
       } finally {
         setIsCheckingAuth(false);
       }
-    };
-
-    checkAuthentication();
-  }, [router]);
+    })();
+  }, []);
 
   useEffect(() => {
     if (remainingSeconds === null || remainingSeconds <= 0) return;

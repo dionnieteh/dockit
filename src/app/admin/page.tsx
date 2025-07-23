@@ -13,6 +13,7 @@ import { AdminStats } from "@/components/admin-stats"
 import { Loader2 } from "lucide-react"
 import { UserRole } from "@/lib/user-role"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { checkAuthUser } from "@/lib/users"
 
 export default function AdminDashboard() {
   const [refreshKey, setRefreshKey] = useState(0)
@@ -26,14 +27,7 @@ export default function AdminDashboard() {
       setIsCheckingAuth(true);
       setAuthError(null);
       try {
-        const res = await fetch("/api/me", {
-          method: "GET",
-          credentials: "include",
-        })
-
-        if (!res.ok) throw new Error("Not authenticated")
-
-        const userData = await res.json()
+        const userData = await checkAuthUser()
 
         if (userData.role !== UserRole.ADMIN) {
           router.replace("/docking")
