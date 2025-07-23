@@ -54,7 +54,11 @@ export async function POST(req: Request) {
     const updatedLigandPaths = await convertLigandsToPdbqt(ligandPaths);
 
     // Step 3: Prepare receptor
-    const receptorPaths = await getReceptorFromSupabase();
+    const receptorIds = form.getAll("selectedReceptors") as string[];
+    if (receptorIds.length === 0) {
+      throw new Error("No receptor IDs provided");
+    }
+    const receptorPaths = await getReceptorFromSupabase(receptorIds);
 
     // Step 4: Docking
     for (const receptor of receptorPaths) {
@@ -147,7 +151,6 @@ async function convertLigandsToPdbqt(ligandPaths: string[]): Promise<string[]> {
 
   for (let inputPath of ligandPaths) {
     if (inputPath.endsWith(".mol2")) {
-      console.log("sanitise");
       inputPath = await sanitizeMol2File(inputPath);
     }
 
@@ -180,8 +183,13 @@ async function getPreparedReceptorPath(filename: string, rawPath: string): Promi
   return pdbqtPath;
 }
 
-async function getReceptorFromSupabase(): Promise<string[]> {
+async function getReceptorFromSupabase(ids: string[]): Promise<string[]> {
   const receptorRecords = await prisma.receptorFile.findMany({
+    where: {
+      id: {
+        in: ids.map(id => parseInt(id)),
+      },
+    },
     select: {
       filePath: true,
     },

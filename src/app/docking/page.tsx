@@ -19,7 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { getDefaultParameters } from '@/lib/param'
 import { addJob } from "@/lib/jobs";
 import { TOAST } from "@/lib/toast-messages";
-import { getReceptorCount } from "@/lib/receptors";
+import { getReceptorCount, getReceptors } from "@/lib/receptors";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Check, ChevronDown } from "lucide-react"
 import { checkAuthUser } from "@/lib/users";
 
 export default function NewJobPage() {
@@ -44,6 +46,12 @@ export default function NewJobPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [uploadKey, setUploadKey] = useState(0);
+  const [receptors, setReceptors] = useState<
+    { id: string; name: string; description: string }[]
+  >([])
+  const [receptorOption, setReceptorOption] = useState<"all" | "select">("all");
+  const [selectedReceptorIds, setSelectedReceptorIds] = useState<string[]>([]);
+
 
   const { toast } = useToast();
 
@@ -140,7 +148,6 @@ export default function NewJobPage() {
       return;
     }
 
-    await countEstTime(files.length)
     setIsSubmitting(true);
 
     const formData = new FormData();
@@ -157,6 +164,15 @@ export default function NewJobPage() {
     formData.append("verbosity", verbosity.toString());
     formData.append("exhaustiveness", exhaustiveness.toString());
     files.forEach((f) => formData.append("files", f));
+    formData.append("receptorOption", receptorOption);
+    
+    if (receptorOption === "select") {
+      selectedReceptorIds.forEach(id => formData.append("selectedReceptors", id));
+      await countEstTime(files.length, selectedReceptorIds.length);
+    } else {
+      receptors.forEach(r => formData.append("selectedReceptors", r.id));
+      await countEstTime(files.length, receptors.length);
+    }
 
     try {
       const responseData = await addJob(formData);
@@ -179,10 +195,8 @@ export default function NewJobPage() {
     setIsSubmitting(false);
   }
 
-  async function countEstTime(fileCount: number) {
-    const result = await getReceptorCount();
-    const receptorCount = typeof result === "number" ? result : 0;
-    const est = fileCount * receptorCount * 30;
+  async function countEstTime(ligandCount: number, receptorCount: number) {
+    const est = ligandCount * receptorCount * 30;
     setRemainingSeconds(est);
   }
 
@@ -219,6 +233,8 @@ export default function NewJobPage() {
       </div>
     );
   }
+
+  const selected = receptors.filter(r => selectedReceptorIds.includes(r.id))
 
   return (
     <DashboardShell>
@@ -315,17 +331,89 @@ export default function NewJobPage() {
                 </div>
               </TabsContent>
             </Tabs>
+            <div className="space-y-4">
+              <Label>Receptor Selection</Label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="all"
+                    checked={receptorOption === "all"}
+                    onChange={() => setReceptorOption("all")}
+                  />
+                  Dock with All Receptors
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="select"
+                    checked={receptorOption === "select"}
+                    onChange={() => setReceptorOption("select")}
+                  />
+                  Select Specific Receptors
+                </label>
+              </div>
+              {receptorOption == "select" && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {selected.length > 0
+                        ? selected.map((r) => r.name).join(", ")
+                        : "Select receptors"}
+                      <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full max-h-64 overflow-auto">
+                    <div className="flex flex-col gap-1">
+                      {receptors.map((r) => {
+                        const checked = selectedReceptorIds.includes(r.id)
+                        return (
+                          <button
+                            key={r.id}
+                            type="button"
+                            className={`flex items-start justify-between text-left rounded p-2 hover:bg-muted/30 transition ${checked ? "bg-muted" : ""
+                              }`}
+                            onClick={() => {
+                              setSelectedReceptorIds((prev) =>
+                                checked
+                                  ? prev.filter((id) => id !== r.id)
+                                  : [...prev, r.id]
+                              )
+                            }}
+                          >
+                            <div>
+                              <p className="font-medium">{r.name}</p>
+                              <p className="text-xs text-muted-foreground">{r.description}</p>
+                            </div>
+                            {checked && <Check className="h-4 w-4 text-primary" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col sm:flex-row gap-4">
-            <Button type="submit" disabled={isSubmitting || files.length === 0}>
+            <Button
+              type="submit"
+              disabled={isSubmitting || files.length === 0}
+              onClick={() => {
+                if (jobId) resetForm();
+              }}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing... This will take about {formatTime(remainingSeconds)}.
                 </>
+              ) : jobId ? (
+                "Start New Job"
               ) : (
                 "Start Docking"
-              )}
+              )
+              }
             </Button>
 
             {jobId && (
@@ -337,9 +425,6 @@ export default function NewJobPage() {
                 >
                   Download Results
                 </a>
-                <Button variant="outline" onClick={resetForm}>
-                  Start New Job
-                </Button>
               </div>
             )}
           </CardFooter>
