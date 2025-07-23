@@ -79,6 +79,19 @@ export default function NewJobPage() {
   }, [])
 
   useEffect(() => {
+    const fetchReceptor = async () => {
+      try {
+        const data = await getReceptors()
+        setReceptors(data)
+      } catch (err) {
+        console.error("Failed to fetch receptors for docking", err)
+      }
+    }
+
+    fetchReceptor()
+  }, [])
+
+  useEffect(() => {
     const currentPath = window.location.pathname;
     const redirectToLogin = () => {
       router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
@@ -165,7 +178,7 @@ export default function NewJobPage() {
     formData.append("exhaustiveness", exhaustiveness.toString());
     files.forEach((f) => formData.append("files", f));
     formData.append("receptorOption", receptorOption);
-    
+
     if (receptorOption === "select") {
       selectedReceptorIds.forEach(id => formData.append("selectedReceptors", id));
       await countEstTime(files.length, selectedReceptorIds.length);
