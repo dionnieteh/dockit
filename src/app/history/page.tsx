@@ -17,26 +17,28 @@ export default function JobHistoryPage() {
   const [userId, setUserId] = useState<string>("")
 
   useEffect(() => {
-    const currentPath = window.location.pathname;
-    const redirectToLogin = () => {
-      router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
-    };
-
-    (async () => {
+    const checkAuth = async () => {
       setIsCheckingAuth(true);
       setAuthError(null);
-
       try {
-        const userData = await checkAuthUser();
-        setUser(userData);
-      } catch (error) {
-        setAuthError("Failed to verify authentication");
-        setTimeout(redirectToLogin, 2000);
+        const userData = await checkAuthUser()
+
+        if (!userData.role)
+          throw Error
+        setUser(userData)
+
+      } catch (err) {
+        setAuthError("Unauthorized access. Redirecting...")
+        setTimeout(() => {
+          router.replace("/login?redirect=/history")
+        }, 2000)
       } finally {
-        setIsCheckingAuth(false);
+        setIsCheckingAuth(false)
       }
-    })();
-  }, []);
+    }
+
+    checkAuth()
+  }, [router])
 
   const handleJobCountChange = useCallback(() => {
     setRefreshKey(prev => prev + 1)

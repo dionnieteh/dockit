@@ -23,6 +23,7 @@ import { getReceptorCount, getReceptors } from "@/lib/receptors";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check, ChevronDown } from "lucide-react"
 import { checkAuthUser } from "@/lib/users";
+import { UserRole } from "@/lib/user-role";
 
 export default function NewJobPage() {
   const [defaultParams, setDefaultParams] = useState<any | null>(null)
@@ -92,26 +93,28 @@ export default function NewJobPage() {
   }, [])
 
   useEffect(() => {
-    const currentPath = window.location.pathname;
-    const redirectToLogin = () => {
-      router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
-    };
-
-    (async () => {
+    const checkAuth = async () => {
       setIsCheckingAuth(true);
       setAuthError(null);
-
       try {
-        const userData = await checkAuthUser();
-        setUser(userData);
-      } catch (error) {
-        setAuthError("Failed to verify authentication");
-        setTimeout(redirectToLogin, 2000);
+        const userData = await checkAuthUser()
+
+        if (!userData.role)
+          throw Error
+        setUser(userData)
+
+      } catch (err) {
+        setAuthError("Unauthorized access. Redirecting...")
+        setTimeout(() => {
+          router.replace("/login?redirect=/docking")
+        }, 2000)
       } finally {
-        setIsCheckingAuth(false);
+        setIsCheckingAuth(false)
       }
-    })();
-  }, []);
+    }
+
+    checkAuth()
+  }, [router])
 
   useEffect(() => {
     if (remainingSeconds === null || remainingSeconds <= 0) return;

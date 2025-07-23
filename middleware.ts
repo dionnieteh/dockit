@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { UserRole } from '@/lib/user-role'
 
+export const runtime = 'nodejs'
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value
   const pathname = request.nextUrl.pathname
@@ -27,6 +29,8 @@ export function middleware(request: NextRequest) {
       userRole: string
     }
 
+    console.log('Token decoded successfully:', { userId: decoded.userId, userRole: decoded.userRole })
+
     // ✅ Only block access to /admin for non-admins
     if (pathname.startsWith('/admin') && decoded.userRole !== UserRole.ADMIN) {
       console.log("Redirecting non-admin from /admin")
@@ -34,7 +38,8 @@ export function middleware(request: NextRequest) {
     }
 
     return NextResponse.next()
-  } catch (_error) {
+  } catch (error) {
+    console.log('JWT verification failed:', error)
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(loginUrl)

@@ -29,12 +29,13 @@ export default function AdminDashboard() {
       try {
         const userData = await checkAuthUser()
 
-        if (userData.role !== UserRole.ADMIN) {
+        if (userData.role !== UserRole.ADMIN && userData.role) {
           router.replace("/docking")
+          setUser(userData)
           return
         }
+        throw Error
 
-        setUser(userData)
       } catch (err) {
         setAuthError("Unauthorized access. Redirecting...")
         setTimeout(() => {
