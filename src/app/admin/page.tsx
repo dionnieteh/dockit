@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardHeader } from "@/components/dashboard-header"
@@ -18,50 +18,42 @@ import { checkAuthUser } from "@/lib/users"
 export default function AdminDashboard() {
   const [refreshKey, setRefreshKey] = useState(0)
   const [user, setUser] = useState(null)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     const checkAuth = async () => {
-      setIsCheckingAuth(true);
-      setAuthError(null);
       try {
         const userData = await checkAuthUser()
 
-        if (userData.role !== UserRole.ADMIN && userData.role) {
-          router.replace("/docking")
-          setUser(userData)
-          return
+        if (!userData || !userData.role) {
+          throw new Error("No role")
         }
-        throw Error
 
+        if (userData.role !== UserRole.ADMIN) {
+          router.replace("/docking")
+        } else {
+          setUser(userData)
+        }
       } catch (err) {
         setAuthError("Unauthorized access. Redirecting...")
         setTimeout(() => {
           router.replace("/login?redirect=/admin")
-        }, 2000)
+        }, 1500)
       } finally {
-        setIsCheckingAuth(false)
+        setLoading(false)
       }
     }
 
     checkAuth()
   }, [router])
 
-  const handleUserCountChange = useCallback(() => {
-    setRefreshKey(prev => prev + 1)
-  }, [])
+  const handleUserCountChange = useCallback(() => setRefreshKey(prev => prev + 1), [])
+  const handleReceptorCountChange = useCallback(() => setRefreshKey(prev => prev + 1), [])
+  const handleJobCountChange = useCallback(() => setRefreshKey(prev => prev + 1), [])
 
-  const handleReceptorCountChange = useCallback(() => {
-    setRefreshKey(prev => prev + 1)
-  }, [])
-
-  const handleJobCountChange = useCallback(() => {
-    setRefreshKey(prev => prev + 1)
-  }, [])
-
-  if (isCheckingAuth) {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -87,7 +79,6 @@ export default function AdminDashboard() {
   return (
     <DashboardShell>
       <DashboardHeader heading="Admin Dashboard" text="Manage users, receptors, and system configuration." />
-
       <AdminStats key={refreshKey} />
       <Tabs defaultValue="users" className="space-y-4">
         <TabsList>
