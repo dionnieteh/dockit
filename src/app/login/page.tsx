@@ -63,9 +63,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center px-4 py-12 ">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(76,29,149,0.3),transparent_50%)] pointer-events-none z-0"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_80%,rgba(4, 41, 101, 0.8),transparent_50%)] pointer-events-none z-0"></div>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
+          <img
+            src="/dockit.svg"
+            alt="DockIt Logo"
+            className="h-24 w-auto"
+          />
           <CardTitle className="text-2xl font-bold">Login</CardTitle>
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>
@@ -86,9 +93,6 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-muted-foreground underline">
-                  Forgot password?
-                </Link>
               </div>
               <div className="relative">
                 <Input
@@ -113,9 +117,11 @@ export default function LoginPage() {
                   )}
                 </Button>
               </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">Forgot password?</Link>
+              <div className="mt-4">
+                <Link href="/forgot-password" className="text-sm hover:text-blue-600 underline text-primary">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
@@ -124,7 +130,7 @@ export default function LoginPage() {
             </Button>
             <div className="text-center text-sm">
               Don&apos;t have an account?{" "}
-              <Link href="/signup" className="underline">
+              <Link href="/signup" className="text-sm hover:text-blue-600 underline text-primary">
                 Sign up
               </Link>
             </div>

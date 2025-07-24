@@ -65,12 +65,12 @@ export function DashboardNav() {
   }
 
   return (
-    <div className="flex h-full flex-col p-4">
+    <div className="flex h-full flex-col p-4 bg-[#183471]">
       <div className="py-2">
         <div className="m-4">
           <Link href="/" >
             <img
-              src="/dockit.svg"
+              src="/dockit-white.svg"
               alt="DockIt Logo"
               className="w-2/3"
             />
@@ -82,8 +82,8 @@ export function DashboardNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
-                pathname === item.href ? "bg-accent text-accent-foreground" : "transparent",
+                "flex items-center rounded-md px-4 py-2 text-sm text-white font-medium transition-colors hover:bg-primary hover:text-white",
+                pathname === item.href ? " text-secondary bg-transparent" : "transparent",
               )}
             >
               <item.icon className="mr-2 h-4 w-4" />
@@ -93,7 +93,7 @@ export function DashboardNav() {
         </div>
       </div>
       <div className="mt-auto">
-        <Button variant="outline" className="w-full justify-start" onClick={handleLogout}>
+        <Button variant="secondary" className="w-full justify-start" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           Log out
         </Button>

@@ -79,7 +79,7 @@ export default function AdminDashboard() {
   return (
     <DashboardShell>
       <DashboardHeader heading="Admin Dashboard" text="Manage users, receptors, and system configuration." />
-      <AdminStats key={refreshKey} />
+      <AdminStats key={refreshKey}/>
       <Tabs defaultValue="users" className="space-y-4">
         <TabsList>
           <TabsTrigger value="users">Users and Admins</TabsTrigger>

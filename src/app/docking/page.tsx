@@ -387,7 +387,7 @@ export default function NewJobPage() {
                           <button
                             key={r.id}
                             type="button"
-                            className={`flex items-start justify-between text-left rounded p-2 hover:bg-muted/30 transition ${checked ? "bg-muted" : ""
+                            className={`flex items-start justify-between text-left rounded p-2 hover:bg-muted/30 transition ${checked ? "text-primary" : ""
                               }`}
                             onClick={() => {
                               setSelectedReceptorIds((prev) =>

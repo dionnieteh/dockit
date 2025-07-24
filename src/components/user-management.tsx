@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { UserPlus, Edit, Trash2, Shield, User } from "lucide-react"
+import { UserPlus, Edit, Trash2, Shield, User, EyeOff, Eye } from "lucide-react"
 import { getUsers, updateUser, addAdmin, deleteUser } from "@/lib/users"
 import { useToast } from "@/hooks/use-toast"
 import { TOAST } from "@/lib/toast-messages"
@@ -58,6 +58,7 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterRole, setFilterRole] = useState<string>("All");
+  const [showPassword, setShowPassword] = useState(false)
 
   const { toast } = useToast()
 
@@ -247,7 +248,21 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input id="password" name="password" type="password" required />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -293,11 +308,14 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
                       <TableCell>{`${user.firstName} ${user.lastName}`}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant="destructive">
-                          {user.role === UserRole.ADMIN ?
-                            <Shield className="mr-1 h-3 w-3" /> : <User className="mr-1 h-3 w-3" />
-                          }
-                          {user.role}</Badge>
+                        <Badge variant={user.role === UserRole.ADMIN ? "default" : "secondary"}>
+                          {user.role === UserRole.ADMIN ? (
+                            <Shield className="mr-1 h-3 w-3" />
+                          ) : (
+                            <User className="mr-1 h-3 w-3" />
+                          )}
+                          {user.role}
+                        </Badge>
                       </TableCell>
                       <TableCell>{user.institution}</TableCell>
                       <TableCell>{user.purpose}</TableCell>
@@ -386,7 +404,7 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
                     )}
                   </div>
                 </div>
-                {editingUser.role === UserRole.ADMIN && (
+                {editingUser.role !== UserRole.ADMIN && (
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="institution">Institution</Label>

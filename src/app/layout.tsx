@@ -4,7 +4,7 @@ import ToastWrapper from '@/components/toast-wrapper'
 import { UserProvider } from '@/lib/user-context'
 
 export const metadata: Metadata = {
-  title: 'DockIt: Accelerating Dengue Cure Research with Automated Molecular Docking',
+  title: 'DockIt',
   description:
     'DockIt is an automated platform designed to streamline molecular docking processes specifically for dengue research. It simplifies the conversion of mol2 and pdb files to pdbqt format and runs Autodock Vina simulations, accelerating the search for potential dengue treatments.',
 }
