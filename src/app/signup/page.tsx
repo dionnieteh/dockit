@@ -22,6 +22,11 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
+    if (!role ) {
+      alert("Please select a role")
+      return
+    }
     setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
