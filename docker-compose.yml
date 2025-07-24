@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    container_name: dockit
+    container_name: dockit-cursor
     ports:
       - "3000:3000"
     #TODO: commented out for production
