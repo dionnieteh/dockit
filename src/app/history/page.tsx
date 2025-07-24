@@ -26,6 +26,7 @@ export default function JobHistoryPage() {
         if (!userData.role)
           throw Error
         setUser(userData)
+        setUserId(userData.id)
 
       } catch (err) {
         setAuthError("Unauthorized access. Redirecting...")
