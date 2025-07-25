@@ -114,12 +114,12 @@ export async function POST(req: Request) {
     let dbErrorMessage = err instanceof Error ? err.message : String(err);
 
     if (err instanceof ObabelError) {
-      userErrorMessage = "File processing failed. Please check your input files for any formatting issues or corruption. Supported formats: .mol2, .pdb";
+      userErrorMessage = "File processing failed. Please check your ligand files for any formatting issues or corruption.";
       dbErrorMessage = err.originalError;
     } else if (err instanceof Error && err.message.toLowerCase().includes('obabel')) {
-      userErrorMessage = "File processing failed. Please check your input files for any formatting issues or corruption. Supported formats: .mol2, .pdb";
+      userErrorMessage = "File processing failed. Please check your ligand files for any formatting issues or corruption.";
     } else if (err instanceof Error && err.message.toLowerCase().includes('prepare_ligand4.py failed')) {
-      userErrorMessage = "Ligand preparation failed after sanitization. The input file might still be problematic or the preparation script encountered an issue.";
+      userErrorMessage = "Ligand preparation failed after sanitization. Please check your ligand files for any formatting issues or corruption.";
       dbErrorMessage = err.message;
     }
 
