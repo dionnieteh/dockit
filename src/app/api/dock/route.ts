@@ -112,12 +112,15 @@ export async function POST(req: Request) {
   } catch (err) {
     let userErrorMessage = "Docking job failed";
     let dbErrorMessage = err instanceof Error ? err.message : String(err);
-    
+
     if (err instanceof ObabelError) {
       userErrorMessage = "File processing failed. Please check your input files for any formatting issues or corruption. Supported formats: .mol2, .pdb";
       dbErrorMessage = err.originalError;
     } else if (err instanceof Error && err.message.toLowerCase().includes('obabel')) {
       userErrorMessage = "File processing failed. Please check your input files for any formatting issues or corruption. Supported formats: .mol2, .pdb";
+    } else if (err instanceof Error && err.message.toLowerCase().includes('prepare_ligand4.py failed')) {
+      userErrorMessage = "Ligand preparation failed after sanitization. The input file might still be problematic or the preparation script encountered an issue.";
+      dbErrorMessage = err.message;
     }
 
     await prisma.jobs.update({
@@ -182,7 +185,11 @@ async function convertLigandsToPdbqt(ligandPaths: string[]): Promise<string[]> {
     }
 
     const outPath = inputPath.replace(/\.(mol2|pdb)$/, ".pdbqt");
-    await runCommand("python3", [ligandScript, "-l", inputPath, "-o", outPath]);
+    try {
+      await runCommand("python3", [ligandScript, "-l", inputPath, "-o", outPath]);
+    } catch (error) {
+      throw new Error(`Ligand preparation with prepare_ligand4.py failed for ${path.basename(inputPath)}: ${error instanceof Error ? error.message : String(error)}`);
+    }
     outputPaths.push(outPath);
   }
 
@@ -372,7 +379,7 @@ async function zipModel1Outputs(jobDir: string, zipPath: string) {
 
 async function sanitizeMol2File(filePath: string): Promise<string> {
   const sanitizedPath = filePath.replace(/\.mol2$/, ".cleaned.mol2");
-  
+
   try {
     await runCommand("obabel", [filePath, "-O", sanitizedPath]);
     return sanitizedPath;
