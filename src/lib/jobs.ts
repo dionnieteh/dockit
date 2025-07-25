@@ -5,8 +5,11 @@ export async function addJob(formData: any) {
       method: 'POST',
       body: formData,
     });
-    if (!res.ok)
-      throw new Error(`Failed to create job: ${res.status} ${res.statusText}`);
+    if (!res.ok) {
+      const errorBody = await res.json();
+      const errorMessage = errorBody.error || `Failed to create job: ${res.status} ${res.statusText}`;
+      throw new Error(errorMessage);
+    }
     return await res.json();
   } catch (err: any) {
     console.error(err.message);

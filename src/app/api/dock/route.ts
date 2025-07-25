@@ -135,7 +135,7 @@ export async function POST(req: Request) {
       console.warn("Failed to clean up receptor tmp dir:", cleanupErr);
     }
 
-    return NextResponse.json({ status: 500 }, { statusText: userErrorMessage });
+    return NextResponse.json({ error: userErrorMessage }, { status: 500 });
   }
 }
 
