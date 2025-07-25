@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: 'Password Reset Request',
+      subject: 'DockIt - Password Reset Request',
       html: `<p>Click <a href='${resetUrl}'>here</a> to reset your password. This link expires in 1 hour.</p>`
     });
     return NextResponse.json({ success: true });
