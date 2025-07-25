@@ -11,6 +11,13 @@ import { supabase } from "@/lib/supabase-server";
 
 const PYTHON_SCRIPTS_DIR = path.join(process.cwd(), "src", "scripts");
 
+class ObabelError extends Error {
+  constructor(message: string, public originalError: string) {
+    super(message);
+    this.name = "ObabelError";
+  }
+}
+
 export async function POST(req: Request) {
   var jobId = "0"
   try {
@@ -103,20 +110,32 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ ...jobMetadata, id: jobId });
   } catch (err) {
+    let userErrorMessage = "Docking job failed";
+    let dbErrorMessage = err instanceof Error ? err.message : String(err);
+    
+    if (err instanceof ObabelError) {
+      userErrorMessage = "File processing failed. Please check your input files for any formatting issues or corruption. Supported formats: .mol2, .pdb";
+      dbErrorMessage = err.originalError;
+    } else if (err instanceof Error && err.message.toLowerCase().includes('obabel')) {
+      userErrorMessage = "File processing failed. Please check your input files for any formatting issues or corruption. Supported formats: .mol2, .pdb";
+    }
+
     await prisma.jobs.update({
       where: { id: jobId },
       data: {
         status: JobStatus.ERROR,
-        errorMessage: err instanceof Error ? err.message : String(err)
+        errorMessage: dbErrorMessage
       },
     });
+
     try {
       const receptorTmpDir = path.join(process.cwd(), "receptors");
       await fs.rm(receptorTmpDir, { recursive: true, force: true });
     } catch (cleanupErr) {
       console.warn("Failed to clean up receptor tmp dir:", cleanupErr);
     }
-    return NextResponse.json({ error: "Docking job failed" + err });
+
+    return NextResponse.json({ error: userErrorMessage }, { status: 500 });
   }
 }
 
@@ -151,7 +170,15 @@ async function convertLigandsToPdbqt(ligandPaths: string[]): Promise<string[]> {
 
   for (let inputPath of ligandPaths) {
     if (inputPath.endsWith(".mol2")) {
-      inputPath = await sanitizeMol2File(inputPath);
+      try {
+        inputPath = await sanitizeMol2File(inputPath);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        throw new ObabelError(
+          "Failed to process .mol2 file. Please check your input files for formatting issues.",
+          `Obabel sanitization failed for ${path.basename(inputPath)}: ${errorMessage}`
+        );
+      }
     }
 
     const outPath = inputPath.replace(/\.(mol2|pdb)$/, ".pdbqt");
@@ -345,6 +372,12 @@ async function zipModel1Outputs(jobDir: string, zipPath: string) {
 
 async function sanitizeMol2File(filePath: string): Promise<string> {
   const sanitizedPath = filePath.replace(/\.mol2$/, ".cleaned.mol2");
-  await runCommand("obabel", [filePath, "-O", sanitizedPath]);
-  return sanitizedPath;
+  
+  try {
+    await runCommand("obabel", [filePath, "-O", sanitizedPath]);
+    return sanitizedPath;
+  } catch (error) {
+    const filename = path.basename(filePath);
+    throw new Error(`Obabel failed to process ${filename}: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
