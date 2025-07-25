@@ -1,3 +1,11 @@
+# -----------------------------------------------------------------------------
+#    Title: Autodock-vina-example: prepare_ligand4.py
+#    Author: Shasha
+#    Date: 2020
+#    Code version: 1.0
+#    Availability: https://github.com/sha256feng/Autodock-vina-example/blob/master/prepare_ligand4.py
+# -----------------------------------------------------------------------------
+
 import os
 from MolKit import Read
 from AutoDockTools.MoleculePreparation import AD4LigandPreparation

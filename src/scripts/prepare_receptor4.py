@@ -1,9 +1,11 @@
-#!/usr/bin/env python3
-#
-#
-#
-# $Header: /opt/cvs/python/packages/share1.5/AutoDockTools/Utilities24/prepare_receptor4.py,v 1.11 2007/11/28 22:40:22 rhuey Exp $
-#
+# -----------------------------------------------------------------------------
+#    Title: Autodock-vina-example: prepare_receptor4.py
+#    Author: Shasha
+#    Date: 2020
+#    Code version: 1.0
+#    Availability: https://github.com/sha256feng/Autodock-vina-example/blob/master/prepare_receptor4.py
+# -----------------------------------------------------------------------------
+
 import os
 import sys
 import getopt
