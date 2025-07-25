@@ -43,6 +43,8 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
     return validFiles
   }
 
+  const MAX_FILES = 50
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -50,10 +52,11 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const validFiles = validateFiles(e.dataTransfer.files)
-
       if (validFiles.length > 0) {
-        const newFiles = multiple ? [...selectedFiles, ...validFiles] : [validFiles[0]]
-
+        let newFiles = multiple ? [...selectedFiles, ...validFiles] : [validFiles[0]]
+        if (newFiles.length > MAX_FILES) {
+          newFiles = newFiles.slice(0, MAX_FILES)
+        }
         setSelectedFiles(newFiles)
         onFilesChange(newFiles)
       }
@@ -65,10 +68,11 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
 
     if (e.target.files && e.target.files.length > 0) {
       const validFiles = validateFiles(e.target.files)
-
       if (validFiles.length > 0) {
-        const newFiles = multiple ? [...selectedFiles, ...validFiles] : [validFiles[0]]
-
+        let newFiles = multiple ? [...selectedFiles, ...validFiles] : [validFiles[0]]
+        if (newFiles.length > MAX_FILES) {
+          newFiles = newFiles.slice(0, MAX_FILES)
+        }
         setSelectedFiles(newFiles)
         onFilesChange(newFiles)
       }
@@ -89,9 +93,8 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
   return (
     <div className="space-y-4">
       <div
-        className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${
-          dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
-        }`}
+        className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+          }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}

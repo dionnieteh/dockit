@@ -269,7 +269,7 @@ export default function NewJobPage() {
         <form onSubmit={handleSubmit}>
           <CardHeader>
             <CardTitle>Job Configuration</CardTitle>
-            <CardDescription>Upload molecule files and configure grid parameters for docking</CardDescription>
+            <CardDescription>Upload up to 50 ligand files and configure grid parameters for docking</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -284,7 +284,7 @@ export default function NewJobPage() {
             </div>
 
             <div className="space-y-4">
-              <Label>File Upload</Label>
+              <Label>Ligand File Upload</Label>
               <FileUpload key={uploadKey} onFilesChange={handleFileChange} />
               {files.length > 0 && (
                 <div className="text-sm text-muted-foreground">
