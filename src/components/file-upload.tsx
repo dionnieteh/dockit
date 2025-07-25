@@ -4,7 +4,8 @@ import type React from "react"
 
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Upload, X } from "lucide-react"
+import { Upload, X, AlertTriangle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface FileUploadProps {
   onFilesChange: (files: File[]) => void
@@ -15,6 +16,8 @@ interface FileUploadProps {
 export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"], multiple = true }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [showLimitAlert, setShowLimitAlert] = useState(false)
+  const [limitAlertMessage, setLimitAlertMessage] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleDrag = (e: React.DragEvent) => {
@@ -45,6 +48,18 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
 
   const MAX_FILES = 50
 
+  const showFileLimitAlert = (totalFiles: number, limitedFiles: number) => {
+    const droppedFiles = totalFiles - limitedFiles
+    setLimitAlertMessage(
+      `You tried to upload ${totalFiles} files, but only ${limitedFiles} files are allowed. ${droppedFiles} file${droppedFiles > 1 ? 's were' : ' was'} not added.`
+    )
+    setShowLimitAlert(true)
+    
+    setTimeout(() => {
+      setShowLimitAlert(false)
+    }, 5000)
+  }
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -54,9 +69,13 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
       const validFiles = validateFiles(e.dataTransfer.files)
       if (validFiles.length > 0) {
         let newFiles = multiple ? [...selectedFiles, ...validFiles] : [validFiles[0]]
+        const totalFilesBeforeLimit = newFiles.length
+        
         if (newFiles.length > MAX_FILES) {
           newFiles = newFiles.slice(0, MAX_FILES)
+          showFileLimitAlert(totalFilesBeforeLimit, MAX_FILES)
         }
+        
         setSelectedFiles(newFiles)
         onFilesChange(newFiles)
       }
@@ -70,9 +89,13 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
       const validFiles = validateFiles(e.target.files)
       if (validFiles.length > 0) {
         let newFiles = multiple ? [...selectedFiles, ...validFiles] : [validFiles[0]]
+        const totalFilesBeforeLimit = newFiles.length
+        
         if (newFiles.length > MAX_FILES) {
           newFiles = newFiles.slice(0, MAX_FILES)
+          showFileLimitAlert(totalFilesBeforeLimit, MAX_FILES)
         }
+        
         setSelectedFiles(newFiles)
         onFilesChange(newFiles)
       }
@@ -88,10 +111,24 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
     newFiles.splice(index, 1)
     setSelectedFiles(newFiles)
     onFilesChange(newFiles)
+    
+    // Hide the alert when user removes files
+    if (showLimitAlert) {
+      setShowLimitAlert(false)
+    }
   }
 
   return (
     <div className="space-y-4">
+      {showLimitAlert && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {limitAlertMessage}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <div
         className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors ${dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
           }`}
@@ -115,6 +152,7 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
           <h3 className="text-lg font-semibold">Drag and drop your files</h3>
           <p className="text-sm text-muted-foreground">or click to browse files</p>
           <p className="text-xs text-muted-foreground">Accepted file types: {acceptedFileTypes.join(", ")}</p>
+          <p className="text-xs text-muted-foreground">Maximum {MAX_FILES} files allowed</p>
           <Button type="button" variant="outline" size="sm" onClick={handleButtonClick} className="mt-2">
             Select Files
           </Button>
@@ -123,7 +161,7 @@ export function FileUpload({ onFilesChange, acceptedFileTypes = [".mol2", ".pdb"
 
       {selectedFiles.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium">Selected Files:</h4>
+          <h4 className="text-sm font-medium">Selected Files ({selectedFiles.length}/{MAX_FILES}):</h4>
           <div className="max-h-40 overflow-y-auto rounded-md border">
             {selectedFiles.map((file, index) => (
               <div
