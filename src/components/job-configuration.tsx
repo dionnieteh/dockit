@@ -111,7 +111,7 @@ export function JobConfiguration({ onJobCountChange }: JobManagementProps) {
     <Card>
       <CardHeader>
         <CardTitle>Docking Jobs</CardTitle>
-        <CardDescription>Displaying all molecular docking jobs</CardDescription>
+        <CardDescription>Displaying all molecular docking jobs within the past 7 days</CardDescription>
         <div className="flex flex-col md:flex-row gap-4 mt-4 w-full justify-between">
           <Input
             placeholder="Search by job name, status, error, user first name or email"

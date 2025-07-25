@@ -276,7 +276,7 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
                   </div>
                 </div>
                 <DialogFooter className="mt-6">
-                  <Button type="submit">Add User</Button>
+                  <Button type="submit">Add Admin</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
