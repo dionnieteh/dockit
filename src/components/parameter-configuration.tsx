@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Save, Edit } from "lucide-react";
 import { formatDateTimeMY } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast"
+import { TOAST } from "@/lib/toast-messages";
 
 interface Parameter {
   id: number;
@@ -30,6 +32,8 @@ export function ParameterConfiguration() {
   const [loading, setLoading] = useState(true);
   const [editingParameter, setEditingParameter] = useState<Parameter | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchParams();
@@ -46,7 +50,11 @@ export function ParameterConfiguration() {
       }));
       setParameters(transformed);
     } catch (err) {
-      console.error("Failed to fetch default docking parameters", err);
+      toast({
+        title: "Default Parameters " + TOAST.GET_ERROR.title,
+        description: TOAST.GET_ERROR.description + (err ? err : "Unknown error"),
+        variant: TOAST.GET_ERROR.variant,
+      })
     } finally {
       setLoading(false);
     }
@@ -69,7 +77,7 @@ export function ParameterConfiguration() {
         ? {
           ...p,
           parameterValue: updatedValue,
-          updatedBy: "system", // or set to the current user if available
+          updatedBy: "system",
         }
         : p
     );
@@ -78,13 +86,29 @@ export function ParameterConfiguration() {
     setEditingParameter(null);
     setShowEditDialog(false);
 
-    const res = await updateDefaultParameter(editingParameter.parameterName, updatedValue);
+    try {
+      const res = await updateDefaultParameter(editingParameter.parameterName, updatedValue);
 
-    if (res.error)
-      console.error("Failed to update parameter in DB", res.error);
-    else
-
-      await fetchParams(); // Refetch to ensure we have the latest data
+      if (res.error) {
+        setParameters(parameters);
+        throw new Error(res.error)
+      }
+      toast({
+        title: TOAST.PARAM_UPDATE_SUCCESS.title,
+        description: TOAST.PARAM_UPDATE_SUCCESS.description,
+        variant: TOAST.PARAM_UPDATE_SUCCESS.variant
+      });
+      await fetchParams();
+    } catch (err) {
+      console.error("Failed to update parameter", err);
+      toast({
+        title: TOAST.PARAM_UPDATE_ERROR.title,
+        description: TOAST.PARAM_UPDATE_ERROR.description + (err ? err : "Unknown error"),
+        variant: TOAST.PARAM_UPDATE_ERROR.variant
+      });
+    } finally {
+      setLoading(false)
+    }
   };
 
   const getParameterDisplayName = (name: string) => {
@@ -115,13 +139,13 @@ export function ParameterConfiguration() {
         {loading ?
           <div className="px-4">Loading parameters...</div> : (
             <Table>
-                <TableHeader>
+              <TableHeader>
                 <TableRow>
                   <TableHead className="font-bold">Parameter</TableHead>
                   <TableHead className="font-bold">Current Value</TableHead>
                   <TableHead className="font-bold">Actions</TableHead>
                 </TableRow>
-                </TableHeader>
+              </TableHeader>
               <TableBody>
                 {parameters
                   .filter((param) => param.parameterName !== "id" && param.parameterName !== "updatedBy")

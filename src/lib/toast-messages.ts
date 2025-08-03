@@ -81,4 +81,14 @@ export const TOAST = {
     description: "An error occurred during the docking process: ",
     variant: ToastVariant.ERROR,
   },
+  PARAM_UPDATE_SUCCESS: {
+    title: "Parameter Updated Successfully",
+    description: "The docking parameter has been updated.",
+    variant: ToastVariant.SUCCESS,
+  },
+  PARAM_UPDATE_ERROR: {
+    title: "Parameter Update Failed",
+    description: "An error occurred while updating the docking parameter: ",
+    variant: ToastVariant.ERROR,
+  },
 } as const
