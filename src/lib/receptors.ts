@@ -15,7 +15,7 @@ export async function getReceptors() {
     }));
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message }
+    throw err;
   }
 }
 
@@ -33,7 +33,7 @@ export async function updateReceptor(id: number, data: any) {
     return await res.json();
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message };
+    throw err;
   }
 }
 
@@ -51,7 +51,7 @@ export async function addReceptor(data: any) {
     return res;
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message };
+    throw err;
   }
 }
 
@@ -65,14 +65,14 @@ export async function deleteReceptor(id: number) {
     return await res.json();
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message };
+    throw err;
   }
 }
 
 export async function getReceptorCount(): Promise<number | { error: string }> {
   try {
     const files = await getReceptors();
-    
+
     if (Array.isArray(files)) {
       return files.length;
     } else {
@@ -80,6 +80,6 @@ export async function getReceptorCount(): Promise<number | { error: string }> {
     }
   } catch (err: any) {
     console.error(err.message);
-    return { error: err.message };
+    throw err;
   }
 }

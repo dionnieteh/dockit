@@ -4,7 +4,7 @@ export async function getDefaultParameters() {
     if (!res.ok) console.error('Failed to load default parameters')
     return await res.json()
   } catch (err: any) {
-    return { error: err.message } 
+    throw err;
   }
 }
 
@@ -21,6 +21,6 @@ export async function updateDefaultParameter(name: string, value: string) {
     if (!res.ok) console.error("Failed to update parameter")
     return await res.json()
   } catch (err: any) {
-    return { error: err.message }
+    throw err;
   }
 }

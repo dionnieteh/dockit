@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { capitalize } from "@/lib/utils";
 
-// PUT: Update user details
 export async function PUT(req: NextRequest) {
   try {
     const url = new URL(req.url);
@@ -32,7 +31,6 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE: Delete a user by ID
 export async function DELETE(req: NextRequest) {
   try {
     const url = new URL(req.url);

@@ -13,7 +13,21 @@ export async function addJob(formData: any) {
     return await res.json();
   } catch (err: any) {
     console.error(err.message);
-    return { error: err.message };
+    throw err;
+  }
+}
+
+export async function deleteJobs(id: number) {
+  try {
+    const res = await fetch(`/api/admin/jobs/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok)
+      throw new Error(`Failed to delete jobs: ${res.status} ${res.statusText}`);
+    return await res.json();
+  } catch (err: any) {
+    console.error(err.message)
+    throw err;
   }
 }
 
@@ -44,7 +58,7 @@ export async function getJobs() {
     }));
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message }
+    throw err;
   }
 }
 
@@ -80,7 +94,7 @@ export async function getJobsByUser(userId: string) {
     };
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message }
+    throw err;
   }
 }
 
@@ -95,6 +109,6 @@ export async function getJobCount(): Promise<number | { error: string }> {
     }
   } catch (err: any) {
     console.error(err.message);
-    return { error: err.message };
+    throw err;
   }
 }

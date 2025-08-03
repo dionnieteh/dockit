@@ -35,6 +35,7 @@ import { getUsers, updateUser, addAdmin, deleteUser } from "@/lib/users"
 import { useToast } from "@/hooks/use-toast"
 import { TOAST } from "@/lib/toast-messages"
 import { UserRole } from "@/lib/user-role"
+import { deleteJobs } from "@/lib/jobs"
 
 interface User {
   id: number
@@ -160,6 +161,7 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
 
   const handleDeleteUser = async (id: number) => {
     try {
+      await deleteJobs(id)
       await deleteUser(id)
       setUsers(users.filter((user) => user.id !== id))
       onUserCountChange?.()

@@ -12,17 +12,16 @@ interface User {
 interface UserContextType {
   user: User | null
   isLoading: boolean
-  logout: () => Promise<void> // ✅ Add logout method
-  setUser: (user: User | null) => void // ✅ add this
+  logout: () => Promise<void>
+  setUser: (user: User | null) => void
 
 }
 
 const UserContext = createContext<UserContextType>({
   user: null,
   isLoading: true,
-  logout: async () => { }, // default noop
-  setUser: () => { }, // noop default
-
+  logout: async () => { },
+  setUser: () => { },
 })
 
 export const useUser = () => useContext(UserContext)
@@ -62,7 +61,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err) {
       console.error("Logout failed", err)
     } finally {
-      setUser(null) // Clear user immediately
+      setUser(null)
     }
   }
 

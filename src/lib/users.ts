@@ -5,14 +5,14 @@ export async function checkAuthUser() {
       method: "GET",
       credentials: "include",
     });
-  
+
     if (!res.ok) {
       throw new Error("Not authenticated");
     }
     return await res.json();
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message }
+    throw err;
   }
 }
 
@@ -33,7 +33,7 @@ export async function getUsers() {
     }));
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message }
+    throw err;
   }
 }
 
@@ -51,7 +51,7 @@ export async function updateUser(id: number, data: any) {
     return await res.json();
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message };
+    throw err;
   }
 }
 
@@ -69,7 +69,7 @@ export async function addAdmin(data: any) {
     return await res.json();
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message };
+    throw err;
   }
 }
 
@@ -83,7 +83,7 @@ export async function deleteUser(id: number) {
     return await res.json();
   } catch (err: any) {
     console.error(err.message)
-    return { error: err.message };
+    throw err;
   }
 }
 
@@ -98,6 +98,6 @@ export async function getUserCount(): Promise<number | { error: string }> {
     }
   } catch (err: any) {
     console.error(err.message);
-    return { error: err.message };
+    throw err;
   }
 }
