@@ -68,11 +68,13 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_80%,rgba(4, 41, 101, 0.8),transparent_50%)] pointer-events-none z-0"></div>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <img
-            src="/dockit.svg"
-            alt="DockIt Logo"
-            className="h-24 w-auto"
-          />
+          <Link href="/" className="flex items-center justify-center mb-4 group ">
+            <img
+              src="/dockit.svg"
+              alt="DockIt Logo"
+              className="h-24 w-auto transition-transform duration-300 group-hover:scale-110"
+            />
+          </Link>
           <CardTitle className="text-2xl font-bold">Login</CardTitle>
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>

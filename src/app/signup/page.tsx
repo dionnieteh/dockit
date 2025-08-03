@@ -23,7 +23,7 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!role ) {
+    if (!role) {
       alert("Please select a role")
       return
     }
@@ -71,11 +71,13 @@ export default function SignupPage() {
       <div className="flex min-h-screen items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <img
-              src="/dockit.svg"
-              alt="DockIt Logo"
-              className="h-24 w-auto"
-            />
+            <Link href="/" className="flex items-center justify-center mb-4 group ">
+              <img
+                src="/dockit.svg"
+                alt="DockIt Logo"
+                className="h-24 w-auto transition-transform duration-300 group-hover:scale-110"
+              />
+            </Link>
             <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
             <CardDescription>Enter your information to create an account</CardDescription>
           </CardHeader>

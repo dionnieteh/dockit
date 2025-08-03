@@ -68,11 +68,11 @@ export function DashboardNav() {
     <div className="flex h-full flex-col p-4 bg-[#183471]">
       <div className="py-2">
         <div className="m-4">
-          <Link href="/" >
+          <Link href="/" className="group">
             <img
               src="/dockit-white.svg"
               alt="DockIt Logo"
-              className="w-2/3"
+              className="w-2/3 transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
         </div>
