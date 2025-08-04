@@ -406,7 +406,7 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
                     )}
                   </div>
                 </div>
-                {editingUser.role !== UserRole.ADMIN && (
+                {editingUser.role !== UserRole.ADMIN ? (
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="institution">Institution</Label>
@@ -426,6 +426,15 @@ export function UserManagement({ onUserCountChange }: UserManagementProps) {
                         required
                       />
                     </div>
+                  </>
+                ) : (
+                  <>
+                    <input type="hidden" id="institution"
+                      name="institution"
+                      defaultValue={editingUser.institution} />
+                    <input type="hidden" id="purpose"
+                      name="purpose"
+                      defaultValue={editingUser.purpose} />
                   </>
                 )}
                 < DialogFooter className="mt-6">
